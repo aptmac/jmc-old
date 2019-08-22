@@ -48,7 +48,9 @@ import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.common.unit.QuantitiesToolkit;
 import org.openjdk.jmc.common.unit.QuantityRange;
+import org.openjdk.jmc.common.unit.UnitLookup;
 import org.openjdk.jmc.ui.charts.IChartInfoVisitor.ITick;
+import org.openjdk.jmc.ui.common.PatternFly.Palette;
 
 public class XYChart {
 	private static final String ELLIPSIS = "..."; //$NON-NLS-1$
@@ -152,12 +154,12 @@ public class XYChart {
 		SubdividedQuantityRange fullRangeAxis = new SubdividedQuantityRange(start, end, axisWidth, 25);
 		int x1 = (int) fullRangeAxis.getPixel(currentStart);
 		int x2 = (int) Math.ceil(fullRangeAxis.getPixel(currentEnd));
-		if (x1 > 0 || x2 < axisWidth) {
+//		if (x1 > 0 || x2 < axisWidth) {
 			context.setPaint(RANGE_INDICATION_COLOR);
 			context.fillRect(x1, rangeIndicatorY, x2 - x1, RANGE_INDICATOR_HEIGHT);
 			context.setPaint(Color.DARK_GRAY);
 			context.drawRect(0, rangeIndicatorY, axisWidth - 1, RANGE_INDICATOR_HEIGHT);
-		}
+//		}
 	}
 
 	private void doRender(Graphics2D context, int axisHeight) {
@@ -169,6 +171,7 @@ public class XYChart {
 		// ... then the graph ...
 		rendererResult = rendererRoot.render(context, xBucketRange, axisHeight);
 		AffineTransform oldTransform = context.getTransform();
+		c = 0;
 		renderText(context, rendererResult);
 		context.setTransform(oldTransform);
 		if (!selectedRows.isEmpty()) {
@@ -183,11 +186,14 @@ public class XYChart {
 
 	private void renderSelection(Graphics2D context, IRenderedRow row) {
 		if (selectedRows.contains(row.getPayload())) {
+			Color highlight = new Color(0, 206, 209, 20);
 			renderSelection(context, xBucketRange, row.getHeight());
+			context.setColor(highlight);
+			context.fillRect(-180, 0, 180, row.getHeight());
 		} else {
 			List<IRenderedRow> subdivision = row.getNestedRows();
 			if (subdivision.isEmpty()) {
-				dimRect(context, 0, axisWidth, row.getHeight());
+				dimRect(context, 0, axisWidth, row.getHeight(), true);
 			} else {
 				for (IRenderedRow nestedRow : row.getNestedRows()) {
 					renderSelection(context, nestedRow);
@@ -198,11 +204,23 @@ public class XYChart {
 		context.translate(0, row.getHeight());
 	}
 
+	int c = 0;
+	private void paintRowBackground(Graphics2D context, int height) {
+       if (c % 2 == 0) {
+           context.setColor(Palette.PF_BLACK_100.getAWTColor());
+       } else {
+           context.setColor(Palette.PF_BLACK_300.getAWTColor());
+       }
+       context.fillRect(-xOffset, (height - context.getFontMetrics().getHeight() / 2) - 35, 180, height - 4);
+       c++;
+   }
+
 	private void renderText(Graphics2D context, IRenderedRow row) {
 		String text = row.getName();
 		int height = row.getHeight();
 		if (height >= context.getFontMetrics().getHeight()) {
 			if (text != null) {
+				paintRowBackground(context, row.getHeight());
 				context.setColor(Color.BLACK);
 				int y;
 				if (height > 40) {
@@ -307,6 +325,8 @@ public class XYChart {
 			if (testRange.getQuantityAtPixel(0).compareTo(testRange.getQuantityAtPixel(1)) < 0) {
 				currentStart = rangeStart;
 				currentEnd = rangeEnd;
+//				currentEnd.in(UnitLookup.MILLISECOND);
+//				currentStart.in(UnitLookup.MILLISECOND);
 			} else {
 				// Ensures that zoom out is always allowed
 				currentStart = QuantitiesToolkit.min(rangeStart, currentStart);
@@ -332,19 +352,19 @@ public class XYChart {
 		currentEnd = end;
 	}
 
-	public boolean select(int x1, int x2, int y1, int y2) {
+	public boolean select(int x1, int x2, int y1, int y2, boolean clear) {
 		int xStart = Math.min(x1, x2) - xOffset;
 		int xEnd = Math.max(x1, x2) - xOffset;
 
 		if (xBucketRange != null && (xEnd >= 0)) {
 			return select(xBucketRange.getQuantityAtPixel(Math.max(0, xStart)), xBucketRange.getQuantityAtPixel(xEnd),
-					y1, y2);
+					y1, y2, clear);
 		} else {
-			return select(null, null, y1, y2);
+			return select(null, null, y1, y2, clear);
 		}
 	}
 
-	public boolean select(IQuantity xStart, IQuantity xEnd, int y1, int y2) {
+	public boolean select(IQuantity xStart, IQuantity xEnd, int y1, int y2, boolean clear) {
 		if (xStart != null && xStart.compareTo(start) < 0) {
 			xStart = start;
 		}
@@ -355,7 +375,9 @@ public class XYChart {
 		if (QuantitiesToolkit.same(selectionStart, xStart) && QuantitiesToolkit.same(selectionEnd, xEnd)) {
 			oldRows = new HashSet<>(selectedRows);
 		}
-		selectedRows.clear();
+		if (clear) {
+			selectedRows.clear();
+		}
 		addSelectedRows(rendererResult, 0, Math.min(y1, y2), Math.max(y1, y2));
 		selectionStart = xStart;
 		selectionEnd = xEnd;
@@ -372,12 +394,14 @@ public class XYChart {
 	}
 
 	private boolean addSelectedRows(IRenderedRow row, int yRowStart, int ySelectionStart, int ySelectionEnd) {
-		List<IRenderedRow> subdivision = row.getNestedRows();
+		List<IRenderedRow> subdivision = row.getNestedRows(); // height 1450, has all 32 rows
+		subdivision.size();
 		if (subdivision.isEmpty()) {
 			return addPayload(row);
 		} else {
 			boolean nestedHasPayload = false;
 			for (IRenderedRow nestedRow : row.getNestedRows()) {
+				row.getNestedRows().size();
 				int yRowEnd = yRowStart + nestedRow.getHeight();
 				if (yRowStart > ySelectionEnd) {
 					break;
@@ -393,7 +417,11 @@ public class XYChart {
 	private boolean addPayload(IRenderedRow row) {
 		Object payload = row.getPayload();
 		if (payload != null) {
-			selectedRows.add(payload);
+			if (selectedRows.contains(payload)) {
+				selectedRows.remove(payload);
+			} else {
+				selectedRows.add(payload);
+			}
 			return true;
 		}
 		return false;
@@ -418,20 +446,25 @@ public class XYChart {
 //			context.setPaintMode();
 //		}
 		if (selFrom > 0) {
-			dimRect(context, 0, selFrom, height);
+			dimRect(context, 0, selFrom, height, false);
 			context.setColor(Color.BLACK);
 			context.drawLine(selFrom, 0, selFrom, height);
 		}
 		if (selTo < axisWidth) {
-			dimRect(context, selTo, axisWidth - selTo, height);
+			dimRect(context, selTo, axisWidth - selTo, height, false);
 			context.setColor(Color.BLACK);
 			context.drawLine(selTo, 0, selTo, height);
 		}
 	}
 
-	private static void dimRect(Graphics2D context, int from, int width, int height) {
+	private static void dimRect(Graphics2D context, int from, int width, int height, boolean isDimWholeLane) {
 		context.setColor(SELECTION_COLOR);
-		context.fillRect(from, 0, width, height);
+		if (isDimWholeLane) {
+			context.fillRect(from - 180, 0, width + 180, height);
+		} else {
+			context.fillRect(from, 0, width, height);
+		}
+
 	}
 
 	/**

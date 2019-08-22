@@ -87,7 +87,7 @@ public class RendererToolkit {
 					subdivision = result.getNestedRows();
 				}
 			}
-			return new RenderedRowBase(subdivision, height, text, description, payload) {
+			return new RenderedRowBase(subdivision, height, text, description, payload, false) {
 
 				@Override
 				public void infoAt(IChartInfoVisitor visitor, int x, int y, Point offset) {
@@ -163,7 +163,7 @@ public class RendererToolkit {
 				}
 			}
 
-			return new RenderedRowBase(result, height, text, null, null) {
+			return new RenderedRowBase(result, height, text, null, null, false) {
 
 				@Override
 				public void infoAt(IChartInfoVisitor visitor, int x, int y, Point offset) {

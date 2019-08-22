@@ -97,7 +97,7 @@ public class QuantitySpanRenderer implements IXDataRenderer {
 			AWTChartToolkit.drawRanges(context, quantities, innerHeight, false);
 		}
 		context.translate(0, -margin);
-		return new QuantitySpanRendering(margin, quantities, renderedContent, paint, text, description, data);
+		return new QuantitySpanRendering(margin, quantities, renderedContent, paint, text, description, data, false);
 	}
 
 	private static class QuantitySpanRendering extends RenderedRowBase {
@@ -108,22 +108,25 @@ public class QuantitySpanRenderer implements IXDataRenderer {
 		private final int margin;
 		private final String description;
 		private final Object data;
+		private boolean isSelected;
 
 		public QuantitySpanRendering(int margin, XYQuantities<?> points, IRenderedRow content, Paint paint, String text,
-				String description, Object data) {
+				String description, Object data, boolean isSelected) {
 			super(Arrays.asList(new RenderedRowBase(margin), content, new RenderedRowBase(margin)),
-					content.getHeight() + 2 * margin, text, description, null);
+					content.getHeight() + 2 * margin, text, description, null, isSelected);
 			this.margin = margin;
 			this.points = points;
 			this.content = content;
 			this.paint = paint;
 			this.description = description;
 			this.data = data;
+			this.isSelected = isSelected;
 		}
 
 		@Override
 		public void infoAt(IChartInfoVisitor visitor, int x, int y, Point offset) {
 			visitor.hover(data);
+			this.isSelected = true;
 			offset = new Point(offset.x, offset.y + margin);
 			content.infoAt(visitor, x, y, offset);
 

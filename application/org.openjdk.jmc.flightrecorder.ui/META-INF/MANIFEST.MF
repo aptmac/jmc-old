@@ -22,3 +22,4 @@ Export-Package: org.openjdk.jmc.flightrecorder.ui,
  org.openjdk.jmc.flightrecorder.ui.preferences,
  org.openjdk.jmc.flightrecorder.ui.selection
 Automatic-Module-Name: org.openjdk.jmc.flightrecorder.ui
+Import-Package: org.eclipse.jdt.core.dom

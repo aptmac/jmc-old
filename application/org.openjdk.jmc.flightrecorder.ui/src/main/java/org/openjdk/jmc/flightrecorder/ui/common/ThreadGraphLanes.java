@@ -42,8 +42,10 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -61,6 +63,7 @@ import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
 import org.openjdk.jmc.common.item.IItemIterable;
 import org.openjdk.jmc.common.item.ItemFilters;
+import org.openjdk.jmc.common.item.ItemFilters.Types;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.flightrecorder.JfrAttributes;
 import org.openjdk.jmc.flightrecorder.jdk.JdkFilters;
@@ -94,16 +97,23 @@ public class ThreadGraphLanes {
 	private Runnable buildChart;
 	private List<IAction> actions;
 	private String tooltipTitle;
+	private EventTypeFolderNode typeTree;
 
 	public ThreadGraphLanes(Supplier<StreamModel> dataSourceSupplier, Runnable buildChart) {
 		this.dataSourceSupplier = dataSourceSupplier;
 		this.buildChart = buildChart;
 		this.actions = new ArrayList<>();
+		this.typeTree = dataSourceSupplier.get().getTypeTree(ItemCollectionToolkit
+				.stream(dataSourceSupplier.get().getItems()).filter(this::typeWithThreadAndDuration));
+	}
+
+	public EventTypeFolderNode getTypeTree() {
+ 		return typeTree;
 	}
 
 	public void openEditLanesDialog(MCContextMenuManager mm, boolean isLegendMenu) {
 		// FIXME: Might there be other interesting events that don't really have duration?
-		EventTypeFolderNode typeTree = dataSourceSupplier.get().getTypeTree(ItemCollectionToolkit
+		typeTree = dataSourceSupplier.get().getTypeTree(ItemCollectionToolkit
 				.stream(dataSourceSupplier.get().getItems()).filter(this::typeWithThreadAndDuration));
 		laneDefs = LaneEditor.openDialog(typeTree, laneDefs.stream().collect(Collectors.toList()),
 				Messages.JavaApplicationPage_EDIT_THREAD_LANES_DIALOG_TITLE,
@@ -120,6 +130,13 @@ public class ThreadGraphLanes {
 		return DataPageToolkit.isTypeWithThreadAndDuration(itemStream.getType());
 	}
 
+	public Set<String> getEnabledLanes() {
+		List<IItemFilter> laneFilters = laneDefs.stream()
+				.filter((Predicate<? super LaneDefinition>) LaneDefinition::isEnabled).map(ld -> ld.getFilter())
+				.collect(Collectors.toList());
+		return ((Types) ItemFilters.or(laneFilters.toArray(new IItemFilter[laneFilters.size()]))).getTypes();
+	}
+	
 	public IItemFilter getEnabledLanesFilter() {
 		List<IItemFilter> laneFilters = laneDefs.stream()
 				.filter((Predicate<? super LaneDefinition>) LaneDefinition::isEnabled).map(ld -> ld.getFilter())

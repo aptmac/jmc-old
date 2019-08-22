@@ -82,6 +82,7 @@ public class SpanRenderer<T> implements IXDataRenderer {
 		private final ISpanSeries<T> series;
 		private final XYQuantities<T[]> points;
 		private String description;
+		private Object data;
 
 		SpanRendering(int height, XYQuantities<T[]> quantities, ISpanSeries<T> series,
 				IColorProvider<? super T> colorProvider, String description) {
@@ -90,10 +91,13 @@ public class SpanRenderer<T> implements IXDataRenderer {
 			this.series = series;
 			this.colorProvider = colorProvider;
 			this.description = description;
+			this.data = null;
 		}
 
 		@Override
 		public void infoAt(IChartInfoVisitor visitor, int x, int y, Point offset) {
+			visitor.hover(data);
+			
 			if (points != null) {
 				int bucket = points.floorIndexAtX(x);
 				if (bucket >= 0 && bucket < points.getSize()) {

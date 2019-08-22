@@ -37,12 +37,19 @@ import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.xml.ws.EndpointReference;
 
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.KeyEvent;
@@ -69,6 +76,7 @@ import org.openjdk.jmc.ui.accessibility.FocusTracker;
 import org.openjdk.jmc.ui.charts.IChartInfoVisitor;
 import org.openjdk.jmc.ui.charts.IXDataRenderer;
 import org.openjdk.jmc.ui.charts.XYChart;
+import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.common.util.Environment;
 import org.openjdk.jmc.ui.common.util.Environment.OSType;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
@@ -83,7 +91,11 @@ public class ChartCanvas extends Canvas {
 
 		int selectionStartX = -1;
 		int selectionStartY = -1;
+		Point highlightSelectionStart;
+		Point highlightSelectionEnd;
+		Point lastSelection;
 		boolean selectionIsClick = false;
+		Set<Point> highlightPoints; 
 
 		@Override
 		public void mouseDown(MouseEvent e) {
@@ -103,14 +115,54 @@ public class ChartCanvas extends Canvas {
 			 * suffices. Except for an additional platform check, this approach is also used in
 			 * org.eclipse.swt.custom.StyledText.handleMouseDown(Event).
 			 */
-			if ((e.button == 1) && ((e.stateMask & SWT.MOD4) == 0)) {
+			if ((e.button == 1) && ((e.stateMask & SWT.MOD4) == 0) && ((e.stateMask & SWT.CTRL) == 0 ) && ((e.stateMask & SWT.SHIFT) == 0 )) {
+				highlightPoints = new HashSet<>();
+				highlightPoints.add(new Point(e.x, e.y));
 				selectionStartX = e.x;
 				selectionStartY = e.y;
+				highlightSelectionEnd = new Point(-1, -1);
+				lastSelection = new Point(-1, -1);
 				selectionIsClick = true;
 				toggleSelect(selectionStartX, selectionStartY);
+			} else if (((e.stateMask & SWT.CTRL) != 0) && (e.button == 1)) {
+				highlightPoints.add(new Point(e.x, e.y));
+				select(e.x, e.x, e.y, e.y, false);
+				if (selectionListener != null) {
+					selectionListener.run();
+				}
+				// if selectionEnd variables are non-zero (large selection in progress)
+				//    if the ctrl+clicked is in the same selection, then it needs to be un-highlighted
+			} else if (((e.stateMask & SWT.SHIFT) != 0) && (e.button == 1)) {
+				 if (highlightSelectionEnd.y == -1) {
+					highlightSelectionEnd = new Point(e.x, e.y);
+					lastSelection = highlightSelectionEnd;
+					if (highlightSelectionStart.y > highlightSelectionEnd.y) {
+						Point temp = highlightSelectionStart;
+						highlightSelectionStart = highlightSelectionEnd;
+						highlightSelectionEnd = temp;
+					}
+				} else {
+					if (e.y > highlightSelectionStart.y && e.y < highlightSelectionEnd.y) {
+						if (e.y < lastSelection.y) {
+							highlightSelectionEnd = new Point(e.x, e.y);
+						} else if (e.y > lastSelection.y) {
+							highlightSelectionStart = new Point(e.x, e.y);
+						}
+					} else if (e.y < highlightSelectionStart.y) {
+						highlightSelectionStart = new Point(e.x, e.y);
+						lastSelection = highlightSelectionStart;
+					} else if (e.y > highlightSelectionEnd.y) {
+						highlightSelectionEnd = new Point(e.x, e.y);
+						lastSelection = highlightSelectionEnd;
+					}
+				}
+				select(highlightSelectionStart.x, highlightSelectionEnd.x, highlightSelectionStart.y, highlightSelectionEnd.y, true);
+				if (selectionListener != null) {
+					selectionListener.run();
+				}
 			}
 		}
-
+		
 		@Override
 		public void mouseMove(MouseEvent e) {
 			if (selectionStartX >= 0) {
@@ -131,7 +183,7 @@ public class ChartCanvas extends Canvas {
 			}
 			if (!selectionIsClick) {
 				select((int) (selectionStartX / xScale), (int) (x / xScale), (int) (selectionStartY / yScale),
-						(int) (y / yScale));
+						(int) (y / yScale), true);
 			}
 		}
 
@@ -139,6 +191,7 @@ public class ChartCanvas extends Canvas {
 		public void mouseUp(MouseEvent e) {
 			if (selectionStartX >= 0 && (e.button == 1)) {
 				updateSelectionState(e);
+				highlightSelectionStart = new Point(selectionStartX, selectionStartY);
 				selectionStartX = -1;
 				selectionStartY = -1;
 				if (selectionListener != null) {
@@ -164,6 +217,15 @@ public class ChartCanvas extends Canvas {
 		}
 	}
 
+	private int numItems = 0;
+	public void setNumItems(int numItems) {
+		this.numItems = numItems;
+	}
+
+	private int getNumItems() {
+		return numItems;
+	}
+
 	class Painter implements PaintListener {
 
 		@Override
@@ -171,10 +233,17 @@ public class ChartCanvas extends Canvas {
 			Rectangle rect = getClientArea();
 			if (awtNeedsRedraw || !awtCanvas.hasImage(rect.width, rect.height)) {
 				Graphics2D g2d = awtCanvas.getGraphics(rect.width, rect.height);
+				if (getNumItems() > 0) {
+					g2d.getFontMetrics().getHeight();
+					rect.height = 3 * g2d.getFontMetrics().getHeight() * getNumItems();
+				}
 				g2d.setColor(Color.WHITE);
 				g2d.fillRect(0, 0, rect.width, rect.height);
 				Point adjusted = translateDisplayToImageCoordinates(rect.width, rect.height);
 				render(g2d, adjusted.x, adjusted.y);
+				if (getParent() instanceof ScrolledComposite) {
+					((ScrolledComposite) getParent()).setMinSize(rect.width - 20, rect.height);
+				}
 				if (highlightRects != null) {
 					updateHighlightRects();
 				}
@@ -343,9 +412,9 @@ public class ChartCanvas extends Canvas {
 		Selector selector = new Selector();
 		addMouseListener(selector);
 		addMouseMoveListener(selector);
-		addMouseTrackListener(selector);
+//		addMouseTrackListener(selector);
 		FocusTracker.enableFocusTracking(this);
-		addListener(SWT.MouseVerticalWheel, new Zoomer());
+//		addListener(SWT.MouseVerticalWheel, new Zoomer());
 		addKeyListener(new KeyNavigator());
 		aaListener = new AntiAliasingListener();
 		UIPlugin.getDefault().getPreferenceStore().addPropertyChangeListener(aaListener);
@@ -445,6 +514,9 @@ public class ChartCanvas extends Canvas {
 			}
 		}, lastMouseX, lastMouseY);
 		// Attempt to reduce flicker by avoiding unnecessary updates.
+		if (highlightRects != null) {
+			highlightRects.size();
+		}
 		if (!newRects.equals(highlightRects)) {
 			highlightRects = newRects;
 			redraw();
@@ -485,8 +557,8 @@ public class ChartCanvas extends Canvas {
 		}
 	}
 
-	private void select(int x1, int x2, int y1, int y2) {
-		if ((awtChart != null) && awtChart.select(x1, x2, y1, y2)) {
+	private void select(int x1, int x2, int y1, int y2, boolean clear) {
+		if ((awtChart != null) && awtChart.select(x1, x2, y1, y2, clear)) {
 			redrawChart();
 		}
 	}
@@ -515,11 +587,12 @@ public class ChartCanvas extends Canvas {
 				}
 			}, x, y);
 			if ((range[0] != null) || (range[1] != null)) {
-				if (!awtChart.select(range[0], range[1], p.y, p.y)) {
+				if (!awtChart.select(range[0], range[1], p.y, p.y, true)) {
 					awtChart.clearSelection();
 				}
 			} else {
-				if (!awtChart.select(p.x, p.x, p.y, p.y)) {
+				if (!awtChart.select(p.x, p.x, p.y, p.y, true)) {
+					// range is [null, null]
 					awtChart.clearSelection();
 				}
 			}

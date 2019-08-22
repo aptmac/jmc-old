@@ -104,7 +104,7 @@ public class ItemRow implements IXDataRenderer {
 	public IRenderedRow render(Graphics2D context, SubdividedQuantityRange xRange, int height) {
 		IRenderedRow render = renderer.render(context, xRange, height);
 		return new RenderedRowBase(render.getNestedRows(), height, name == null ? render.getName() : name,
-				description == null ? render.getDescription() : description, this) {
+				description == null ? render.getDescription() : description, this, false) {
 
 			@Override
 			public void infoAt(IChartInfoVisitor visitor, int x, int y, Point offset) {

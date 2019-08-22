@@ -505,10 +505,15 @@ public class Messages extends NLS {
 	public static String TABLECOMPONENT_NONE;
 	public static String ThreadDumpsPage_PAGE_NAME;
 	public static String ThreadsPage_EDIT_LANES;
+	public static String ThreadsPage_FOLD_CHART_TOOLTIP;
+	public static String ThreadsPage_FOLD_TABLE_TOOLTIP;
 	public static String ThreadsPage_HIDE_THREAD_ACTION;
+	public static String ThreadsPage_LANE_FILTER_HEADER;
 	public static String ThreadsPage_LANE_TOOLTIP_TITLE;
 	public static String ThreadsPage_NAME;
 	public static String ThreadsPage_RESET_CHART_TO_SELECTION_ACTION;
+	public static String ThreadsPage_SHOW_CHART_TOOLTIP;
+	public static String ThreadsPage_SHOW_TABLE_TOOLTIP;
 	public static String TlabPage_PAGE_NAME;
 	public static String TlabPage_ROW_TLAB_ALLOCATIONS;
 	public static String TlabPage_ROW_TLAB_ALLOCATIONS_DESC;

@@ -43,21 +43,23 @@ public class RenderedRowBase implements IRenderedRow {
 	private String text;
 	private String description;
 	private Object payload;
+	private boolean isSelected;
 
 	public RenderedRowBase(int height) {
 		this(Collections.<IRenderedRow> emptyList(), height);
 	}
 
 	public RenderedRowBase(List<IRenderedRow> children, int height) {
-		this(children, height, null, null, null);
+		this(children, height, null, null, null, false);
 	}
 
-	public RenderedRowBase(List<IRenderedRow> children, int height, String text, String description, Object payload) {
+	public RenderedRowBase(List<IRenderedRow> children, int height, String text, String description, Object payload, boolean isSelected) {
 		this.children = children;
 		this.height = height;
 		this.text = text;
 		this.description = description;
 		this.payload = payload;
+		this.isSelected = isSelected;
 	}
 
 	@Override
@@ -88,6 +90,11 @@ public class RenderedRowBase implements IRenderedRow {
 	@Override
 	public void infoAt(IChartInfoVisitor visitor, int x, int y, Point offset) {
 
+	}
+
+	@Override
+	public boolean isSelected() {
+		return isSelected;
 	}
 
 }
