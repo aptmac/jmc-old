@@ -46,9 +46,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.jface.action.GroupMarker;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
@@ -57,7 +55,6 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.RowData;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Sash;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.openjdk.jmc.common.IMCThread;
 import org.openjdk.jmc.common.IState;
@@ -84,7 +81,7 @@ import org.openjdk.jmc.flightrecorder.ui.IPageUI;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.AbstractDataPage;
 import org.openjdk.jmc.flightrecorder.ui.common.CheckedComboBoxItem;
-import org.openjdk.jmc.flightrecorder.ui.common.CheckedComboBox;
+//import org.openjdk.jmc.flightrecorder.ui.common.CheckedComboBox;
 import org.openjdk.jmc.flightrecorder.ui.common.FlavorSelector.FlavorSelectorState;
 import org.openjdk.jmc.flightrecorder.ui.common.ImageConstants;
 import org.openjdk.jmc.flightrecorder.ui.common.ItemHistogram;
@@ -171,21 +168,15 @@ public class ThreadsPage extends AbstractDataPage {
 	}
 
 	private class ThreadsPageUi extends ChartAndTableUI {
-		private static final String FOLD_CHART_ACTION = "foldChartAction"; //$NON-NLS-1$
-		private static final String FOLD_TABLE_ACTION = "foldTableAction"; //$NON-NLS-1$
+		private static final String THREADS_TABLE_FILTER = "threadsTableFilter"; //$NON-NLS-1$
 		private static final String HIDE_THREAD = "hideThread"; //$NON-NLS-1$
 		private static final String RESET_CHART = "resetChart"; //$NON-NLS-1$
-		private static final String THREADS_TABLE_FILTER = "threadsTableFilter"; //$NON-NLS-1$
-		public static final String TOOLBAR_FOLD_ACTIONS = "foldActions"; //$NON-NLS-1$
 		private Boolean isChartMenuActionsInit;
 		private Boolean isChartModified;
 		private Boolean isToolbarAction = false;
 		private Boolean reloadThreads;
-		private IAction foldChartAction;
-		private IAction foldTableAction;
 		private IAction hideThreadAction;
 		private IAction resetChartAction;
-		private int[] weights;
 		private List<IXDataRenderer> threadRows;
 		private MCContextMenuManager mm;
 		private ThreadGraphLanes lanes;
@@ -194,16 +185,15 @@ public class ThreadsPage extends AbstractDataPage {
 			super(pageFilter, getDataSource(), parent, toolkit, editor, state, getName(), pageFilter, getIcon(),
 					flavorSelectorState);
 			mm = (MCContextMenuManager) chartCanvas.getContextMenu();
-			initializeStoredSashWeights();
 			sash.setOrientation(SWT.HORIZONTAL);
-			chartLegend.getControl().dispose();
-			form.getParent().layout();
-			addMouseListenerToSash();
 			addActionsToContextMenu(mm);
 			// FIXME: The lanes field is initialized by initializeChartConfiguration which is called by the super constructor. This is too indirect for SpotBugs to resolve and should be simplified.
 			lanes.updateContextMenu(mm, false);
-			addActionsToToolbar(form.getToolBarManager());
+			form.getToolBarManager()
+							.add(ActionToolkit.action(() -> lanes.openEditLanesDialog(mm, false), Messages.ThreadsPage_EDIT_LANES,
+											FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_LANES_EDIT)));
 			form.getToolBarManager().update(true);
+			chartLegend.getControl().dispose();
 			buildChart();
 			table.getManager().setSelectionState(histogramSelectionState);
 			tableFilterComponent.loadState(state.getChild(THREADS_TABLE_FILTER));
@@ -253,108 +243,6 @@ public class ThreadsPage extends AbstractDataPage {
 				Boolean checked = enabled.contains(n.getType().getIdentifier().toString());
 				list.add(new CheckedComboBoxItem(typeId, color, checked));
 			}
-		}
-
-		private void addActionsToToolbar(IToolBarManager tb) {
-			foldTableAction = ActionToolkit.checkAction(selected -> {
-				isToolbarAction = true;
-				performToolbarAction(FOLD_TABLE_ACTION, selected);
-				isToolbarAction = false;
-			}, sash.getWeights()[0] == 0 ? Messages.ThreadsPage_SHOW_TABLE_TOOLTIP : Messages.ThreadsPage_FOLD_TABLE_TOOLTIP, FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_TABLE));
-			foldTableAction.setChecked(sash.getWeights()[0] == 0 ? false : true);
-
-			foldChartAction = ActionToolkit.checkAction(selected -> {
-				isToolbarAction = true;
-				performToolbarAction(FOLD_CHART_ACTION, selected);
-				isToolbarAction = false;
-			}, sash.getWeights()[1] == 0 ? Messages.ThreadsPage_SHOW_CHART_TOOLTIP : Messages.ThreadsPage_FOLD_CHART_TOOLTIP, FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_CHART_BAR));
-			foldChartAction.setChecked(sash.getWeights()[1] == 0 ? false : true);
-
-			tb.add(new GroupMarker(TOOLBAR_FOLD_ACTIONS));
-			tb.appendToGroup(TOOLBAR_FOLD_ACTIONS, foldTableAction);
-			tb.appendToGroup(TOOLBAR_FOLD_ACTIONS, foldChartAction);
-			tb.appendToGroup(TOOLBAR_FOLD_ACTIONS, new Separator());
-			tb.add(ActionToolkit.action(() -> lanes.openEditLanesDialog(mm, false), Messages.ThreadsPage_EDIT_LANES,
-							FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_LANES_EDIT)));
-		}
-
-		private void addMouseListenerToSash() {
-			for (int i = 0; i < sash.getChildren().length; i++) {
-				if (sash.getChildren()[i] instanceof Sash) {
-					sash.getChildren()[i].addMouseListener(new org.eclipse.swt.events.MouseListener() {
-
-						@Override
-						public void mouseDown(org.eclipse.swt.events.MouseEvent e) {
-							// if the user manually interacts with the sash to make a folded component visible again,
-							// ensure the toolbar items are checked accordingly
-							if (!isToolbarAction && (foldTableAction.isChecked() != foldChartAction.isChecked())) {
-								performToolbarAction(FOLD_TABLE_ACTION, true);
-								performToolbarAction(FOLD_CHART_ACTION, true);
-								foldTableAction.setChecked(true);
-								foldChartAction.setChecked(true);
-							}
-						}
-
-						@Override
-						public void mouseDoubleClick(org.eclipse.swt.events.MouseEvent e) {}
-
-						@Override
-						public void mouseUp(org.eclipse.swt.events.MouseEvent e) {}
-					});
-				}
-			}
-		}
-
-		private void initializeStoredSashWeights() {
-			// if either the chart or table are folded on init, store a default value of {1, 5}
-			if (sash.getWeights()[0] == 0 || sash.getWeights()[1] == 0) {
-				this.setStoredSashWeights(new int[] {1, 5});
-			} else {
-				this.setStoredSashWeights(sash.getWeights());
-			}
-		}
-
-		private void performToolbarAction(String action, boolean selected) {
-			switch(action) {
-				case FOLD_TABLE_ACTION:
-					if (selected) {
-						sash.setWeights(this.getStoredSashWeights());
-						foldTableAction.setToolTipText(Messages.ThreadsPage_FOLD_TABLE_TOOLTIP);
-					} else {
-						// if the chart is folded, don't fold the table
-						if (sash.getWeights()[1] == 0) {
-							this.foldTableAction.setChecked(true);
-						} else {
-							this.setStoredSashWeights(sash.getWeights());
-							sash.setWeights(new int[] {0, 5});
-							foldTableAction.setToolTipText(Messages.ThreadsPage_SHOW_TABLE_TOOLTIP);
-						}
-					}
-					break;
-				case FOLD_CHART_ACTION:
-					if (selected) {
-						sash.setWeights(this.getStoredSashWeights());
-						foldChartAction.setToolTipText(Messages.ThreadsPage_FOLD_CHART_TOOLTIP);
-					} else {
-						// if the table is folded, don't fold the chart
-						if (sash.getWeights()[0] == 0) {
-							this.foldChartAction.setChecked(true);
-						} else {
-							this.setStoredSashWeights(sash.getWeights());
-							sash.setWeights(new int[] {1, 0});
-							foldChartAction.setToolTipText(Messages.ThreadsPage_SHOW_CHART_TOOLTIP);
-						}
-					}
-					break;
-			}
-		}
-
-		protected int[] getStoredSashWeights() {
-			return this.weights;
-		}
-
-		protected void setStoredSashWeights(int[] weights) {
-			this.weights = weights;
 		}
 
 		/**
