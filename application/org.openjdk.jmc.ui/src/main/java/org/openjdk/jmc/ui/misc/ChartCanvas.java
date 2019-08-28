@@ -34,16 +34,13 @@ package org.openjdk.jmc.ui.misc;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.geom.Dimension2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.xml.ws.EndpointReference;
 
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -95,7 +92,6 @@ public class ChartCanvas extends Canvas {
 		Point highlightSelectionEnd;
 		Point lastSelection;
 		boolean selectionIsClick = false;
-		Set<Point> highlightPoints; 
 
 		@Override
 		public void mouseDown(MouseEvent e) {
@@ -116,8 +112,6 @@ public class ChartCanvas extends Canvas {
 			 * org.eclipse.swt.custom.StyledText.handleMouseDown(Event).
 			 */
 			if ((e.button == 1) && ((e.stateMask & SWT.MOD4) == 0) && ((e.stateMask & SWT.CTRL) == 0 ) && ((e.stateMask & SWT.SHIFT) == 0 )) {
-				highlightPoints = new HashSet<>();
-				highlightPoints.add(new Point(e.x, e.y));
 				selectionStartX = e.x;
 				selectionStartY = e.y;
 				highlightSelectionEnd = new Point(-1, -1);
@@ -125,13 +119,10 @@ public class ChartCanvas extends Canvas {
 				selectionIsClick = true;
 				toggleSelect(selectionStartX, selectionStartY);
 			} else if (((e.stateMask & SWT.CTRL) != 0) && (e.button == 1)) {
-				highlightPoints.add(new Point(e.x, e.y));
 				select(e.x, e.x, e.y, e.y, false);
 				if (selectionListener != null) {
 					selectionListener.run();
 				}
-				// if selectionEnd variables are non-zero (large selection in progress)
-				//    if the ctrl+clicked is in the same selection, then it needs to be un-highlighted
 			} else if (((e.stateMask & SWT.SHIFT) != 0) && (e.button == 1)) {
 				 if (highlightSelectionEnd.y == -1) {
 					highlightSelectionEnd = new Point(e.x, e.y);
@@ -237,12 +228,12 @@ public class ChartCanvas extends Canvas {
 					g2d.getFontMetrics().getHeight();
 					rect.height = 3 * g2d.getFontMetrics().getHeight() * getNumItems();
 				}
-				g2d.setColor(Color.WHITE);
+				g2d.setColor(Palette.PF_BLACK_100.getAWTColor());
 				g2d.fillRect(0, 0, rect.width, rect.height);
 				Point adjusted = translateDisplayToImageCoordinates(rect.width, rect.height);
 				render(g2d, adjusted.x, adjusted.y);
 				if (getParent() instanceof ScrolledComposite) {
-					((ScrolledComposite) getParent()).setMinSize(rect.width - 20, rect.height);
+					((ScrolledComposite) getParent()).setMinSize(rect.width, rect.height);
 				}
 				if (highlightRects != null) {
 					updateHighlightRects();
@@ -356,6 +347,13 @@ public class ChartCanvas extends Canvas {
 				break;
 			default:
 				switch (event.keyCode) {
+				case SWT.ESC:
+					awtChart.clearSelection();
+					if (selectionListener != null) {
+						selectionListener.run();
+					}
+					redrawChart();
+					break;
 				case SWT.ARROW_RIGHT:
 					pan(10);
 					break;
@@ -592,7 +590,6 @@ public class ChartCanvas extends Canvas {
 				}
 			} else {
 				if (!awtChart.select(p.x, p.x, p.y, p.y, true)) {
-					// range is [null, null]
 					awtChart.clearSelection();
 				}
 			}

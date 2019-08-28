@@ -79,7 +79,7 @@ public class ChartDisplayControlBar extends Composite {
 						zoomValue = value;
 						canvas.redrawChart();
 					} else if (zoomValue > value) {
-						chart.zoom(-2);
+						chart.zoom(-1);
 						zoomValue = value;
 						canvas.redrawChart();
 					}
@@ -100,8 +100,8 @@ public class ChartDisplayControlBar extends Composite {
 					scale.setSelection(scale.getSelection() + scale.getIncrement());
 					int value = scale.getMaximum() - scale.getSelection() + scale.getMinimum();
 					text.setText(Integer.toString(value));
-					chart.zoom(-2);
-					zoomValue = zoomValue - 2;
+					chart.zoom(-1);
+					zoomValue--;
 					canvas.redrawChart();
 				}
 			}

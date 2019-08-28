@@ -251,7 +251,7 @@ public class XYDataRenderer implements IXDataRenderer {
 		private static final int TICK_ZONE_WIDTH = 32;
 
 		public RenderedResult(int height) {
-			super(Collections.<IRenderedRow> emptyList(), height, name, null, null, false);
+			super(Collections.<IRenderedRow> emptyList(), height, name, null, null);
 		}
 
 		@Override

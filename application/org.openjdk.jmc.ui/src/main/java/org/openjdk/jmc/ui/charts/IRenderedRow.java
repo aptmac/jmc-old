@@ -48,6 +48,4 @@ public interface IRenderedRow {
 	int getHeight();
 
 	Object getPayload();
-
-	boolean isSelected();
 }

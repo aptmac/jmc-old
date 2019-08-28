@@ -48,7 +48,6 @@ import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.common.unit.QuantitiesToolkit;
 import org.openjdk.jmc.common.unit.QuantityRange;
-import org.openjdk.jmc.common.unit.UnitLookup;
 import org.openjdk.jmc.ui.charts.IChartInfoVisitor.ITick;
 import org.openjdk.jmc.ui.common.PatternFly.Palette;
 
@@ -57,7 +56,8 @@ public class XYChart {
 	private static final Color SELECTION_COLOR = new Color(255, 255, 255, 220);
 	private static final Color RANGE_INDICATION_COLOR = new Color(255, 60, 20);
 	private static final int Y_OFFSET = 35;
-	private static final int RANGE_INDICATOR_HEIGHT = 4;
+	private static final int RANGE_INDICATOR_HEIGHT = 7;
+	private static final double ZOOM_FACTOR = 0.05;
 	private final IQuantity start;
 	private final IQuantity end;
 	private IXDataRenderer rendererRoot;
@@ -73,9 +73,11 @@ public class XYChart {
 	private final Set<Object> selectedRows = new HashSet<>();
 	private IQuantity selectionStart;
 	private IQuantity selectionEnd;
+	private SubdividedQuantityRange xAxis;
 	private SubdividedQuantityRange xBucketRange;
 	private SubdividedQuantityRange xTickRange;
 	private int axisWidth;
+	private TimelineCanvas timeline;
 
 	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot) {
 		this(range.getStart(), range.getEnd(), rendererRoot);
@@ -85,6 +87,11 @@ public class XYChart {
 		this(range.getStart(), range.getEnd(), rendererRoot, xOffset);
 	}
 
+	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, TimelineCanvas timeline) {
+		this(range.getStart(), range.getEnd(), rendererRoot, xOffset);
+		this.timeline = timeline;
+	}
+	
 	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, int bucketWidth) {
 		this(range.getStart(), range.getEnd(), rendererRoot, xOffset, bucketWidth);
 	}
@@ -108,7 +115,7 @@ public class XYChart {
 		this.xOffset = xOffset;
 		this.bucketWidth = bucketWidth;
 	}
-
+	
 	public void setRendererRoot(IXDataRenderer rendererRoot) {
 		clearSelection();
 		this.rendererRoot = rendererRoot;
@@ -154,12 +161,21 @@ public class XYChart {
 		SubdividedQuantityRange fullRangeAxis = new SubdividedQuantityRange(start, end, axisWidth, 25);
 		int x1 = (int) fullRangeAxis.getPixel(currentStart);
 		int x2 = (int) Math.ceil(fullRangeAxis.getPixel(currentEnd));
-//		if (x1 > 0 || x2 < axisWidth) {
+		if (timeline != null) {
+			timeline.renderTimeline(x1, x2, axisWidth);
+			context.setColor(Palette.PF_BLUE.getAWTColor());
+			context.drawLine(0, 0, 25, 0);
+			context.setPaint(Palette.PF_ORANGE_400.getAWTColor());
+			context.fillRect(x1, 0, x2 - x1, RANGE_INDICATOR_HEIGHT);
+			context.setPaint(Palette.PF_BLACK_600.getAWTColor());
+			context.drawRect(0, 0, axisWidth - 1, RANGE_INDICATOR_HEIGHT);
+		} else {
+			// init the timeline canvas in the ChartAndTableUI and have it render the timeline here.
 			context.setPaint(RANGE_INDICATION_COLOR);
 			context.fillRect(x1, rangeIndicatorY, x2 - x1, RANGE_INDICATOR_HEIGHT);
 			context.setPaint(Color.DARK_GRAY);
 			context.drawRect(0, rangeIndicatorY, axisWidth - 1, RANGE_INDICATOR_HEIGHT);
-//		}
+		}
 	}
 
 	private void doRender(Graphics2D context, int axisHeight) {
@@ -298,21 +314,24 @@ public class XYChart {
 		return zoomXAxis(x - xOffset, zoomInSteps);
 	}
 
+	private int currentZoom = 0;
+	
 	private boolean zoomXAxis(int x, int zoomInSteps) {
 		if (xBucketRange == null) {
 			// Return true since a redraw forces creation of xBucketRange.
 			return true;
 		}
 		if ((x > 0) && (x < axisWidth)) {
-			IQuantity oldStart = currentStart;
-			IQuantity oldEnd = currentEnd;
-			// Absolute value of zoomFactor must be less than 1. Currently it ranges between -0.5 and 0.5.
-			double zoomFactor = Math.atan(zoomInSteps) / Math.PI;
-			int newStart = (int) (zoomFactor * x);
-			int newEnd = (int) (axisWidth * (1 - zoomFactor)) + newStart;
-			SubdividedQuantityRange xAxis = new SubdividedQuantityRange(currentStart, currentEnd, axisWidth, 1);
+			currentZoom += zoomInSteps;
+			double t = (Math.floor(currentZoom/10.0));
+			if (t == 0 ) { t++; }
+			int newStart = (int) (ZOOM_FACTOR * currentZoom * axisWidth);
+			int newEnd = axisWidth - newStart;
+			if (xAxis == null) {
+				xAxis = new SubdividedQuantityRange(start, end, axisWidth, 1);
+			}
 			setVisibleRange(xAxis.getQuantityAtPixel(newStart), xAxis.getQuantityAtPixel(newEnd));
-			return (currentStart.compareTo(oldStart) != 0) || (currentEnd.compareTo(oldEnd) != 0);
+			return true;
 		}
 		return false;
 	}
@@ -325,8 +344,6 @@ public class XYChart {
 			if (testRange.getQuantityAtPixel(0).compareTo(testRange.getQuantityAtPixel(1)) < 0) {
 				currentStart = rangeStart;
 				currentEnd = rangeEnd;
-//				currentEnd.in(UnitLookup.MILLISECOND);
-//				currentStart.in(UnitLookup.MILLISECOND);
 			} else {
 				// Ensures that zoom out is always allowed
 				currentStart = QuantitiesToolkit.min(rangeStart, currentStart);
@@ -395,7 +412,6 @@ public class XYChart {
 
 	private boolean addSelectedRows(IRenderedRow row, int yRowStart, int ySelectionStart, int ySelectionEnd) {
 		List<IRenderedRow> subdivision = row.getNestedRows(); // height 1450, has all 32 rows
-		subdivision.size();
 		if (subdivision.isEmpty()) {
 			return addPayload(row);
 		} else {
@@ -416,8 +432,8 @@ public class XYChart {
 
 	private boolean addPayload(IRenderedRow row) {
 		Object payload = row.getPayload();
-		if (payload != null) {
-			if (selectedRows.contains(payload)) {
+		if (payload != null && row.getHeight() != rendererResult.getHeight()) {
+			if (selectedRows.contains(payload)) { // ctrl+click deselection
 				selectedRows.remove(payload);
 			} else {
 				selectedRows.add(payload);

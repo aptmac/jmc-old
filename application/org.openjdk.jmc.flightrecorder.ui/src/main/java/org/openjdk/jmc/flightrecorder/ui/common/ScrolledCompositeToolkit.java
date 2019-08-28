@@ -13,7 +13,7 @@ public class ScrolledCompositeToolkit extends FormToolkit {
 	}
 
 	public ScrolledComposite createScrolledComposite(Composite parent) {
-		return new ScrolledComposite(parent, SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER);
+		return new ScrolledComposite(parent, SWT.V_SCROLL | SWT.BORDER);
 	}
 
 }
