@@ -49,6 +49,8 @@ import java.util.stream.Stream;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -82,6 +84,7 @@ import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.AbstractDataPage;
 import org.openjdk.jmc.flightrecorder.ui.common.CheckedComboBoxItem;
 //import org.openjdk.jmc.flightrecorder.ui.common.CheckedComboBox;
+import org.openjdk.jmc.flightrecorder.ui.common.FilterComponent;
 import org.openjdk.jmc.flightrecorder.ui.common.FlavorSelector.FlavorSelectorState;
 import org.openjdk.jmc.flightrecorder.ui.common.ImageConstants;
 import org.openjdk.jmc.flightrecorder.ui.common.ItemHistogram;
@@ -91,14 +94,17 @@ import org.openjdk.jmc.flightrecorder.ui.common.ItemRow;
 import org.openjdk.jmc.flightrecorder.ui.common.ThreadGraphLanes;
 import org.openjdk.jmc.flightrecorder.ui.common.TypeLabelProvider;
 import org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages;
+import org.openjdk.jmc.flightrecorder.ui.selection.SelectionStoreActionToolkit;
 import org.openjdk.jmc.ui.UIPlugin;
 import org.openjdk.jmc.ui.charts.IXDataRenderer;
 import org.openjdk.jmc.ui.charts.QuantitySpanRenderer;
 import org.openjdk.jmc.ui.charts.RendererToolkit;
 import org.openjdk.jmc.ui.column.ColumnManager.SelectionState;
+import org.openjdk.jmc.ui.column.ColumnMenusFactory;
 import org.openjdk.jmc.ui.column.TableSettings;
 import org.openjdk.jmc.ui.handlers.ActionToolkit;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
+import org.openjdk.jmc.ui.wizards.OnePageWizardDialog;
 
 public class ThreadsPage extends AbstractDataPage {
 
@@ -167,10 +173,11 @@ public class ThreadsPage extends AbstractDataPage {
 				Messages.JavaApplicationPage_COLUMN_THREAD_DURATION_DESC);
 	}
 
-	private class ThreadsPageUi extends ChartAndTableUI {
+	private class ThreadsPageUi extends ChartAndPopupTableUI {
 		private static final String THREADS_TABLE_FILTER = "threadsTableFilter"; //$NON-NLS-1$
 		private static final String HIDE_THREAD = "hideThread"; //$NON-NLS-1$
 		private static final String RESET_CHART = "resetChart"; //$NON-NLS-1$
+		private static final String TABLE = "table"; //$NON-NLS-1$
 		private Boolean isChartMenuActionsInit;
 		private Boolean isChartModified;
 		private Boolean isToolbarAction = false;
@@ -190,13 +197,14 @@ public class ThreadsPage extends AbstractDataPage {
 			// FIXME: The lanes field is initialized by initializeChartConfiguration which is called by the super constructor. This is too indirect for SpotBugs to resolve and should be simplified.
 			lanes.updateContextMenu(mm, false);
 			form.getToolBarManager()
-							.add(ActionToolkit.action(() -> lanes.openEditLanesDialog(mm, false), Messages.ThreadsPage_EDIT_LANES,
-											FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_LANES_EDIT)));
+					.add(ActionToolkit.action(() -> lanes.openEditLanesDialog(mm, false), Messages.ThreadsPage_EDIT_LANES,
+							FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_LANES_EDIT)));
+			form.getToolBarManager()
+			.add(ActionToolkit.action(() -> openViewThreadDetailsDialog(state), Messages.ThreadsPage_VIEW_THREAD_DETAILS,
+					FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_TABLE)));
 			form.getToolBarManager().update(true);
 			chartLegend.getControl().dispose();
 			buildChart();
-			table.getManager().setSelectionState(histogramSelectionState);
-			tableFilterComponent.loadState(state.getChild(THREADS_TABLE_FILTER));
 			chart.setVisibleRange(visibleRange.getStart(), visibleRange.getEnd());
 			onFilterChange(tableFilter);
 
@@ -335,12 +343,12 @@ public class ThreadsPage extends AbstractDataPage {
 		@Override
 		protected IXDataRenderer getChartRenderer(IItemCollection itemsInTable, HistogramSelection tableSelection) {
 			List<IXDataRenderer> rows = new ArrayList<>();
-
+			ItemHistogram histogram = getUndisposedTable();
 			IItemCollection selectedItems;
 			HistogramSelection selection;
 			if (tableSelection.getRowCount() == 0) {
 				selectedItems = itemsInTable;
-				selection = table.getAllRows();
+				selection = histogram.getAllRows();
 			} else {
 				selectedItems = tableSelection.getItems();
 				selection = tableSelection;
@@ -384,13 +392,12 @@ public class ThreadsPage extends AbstractDataPage {
 		@Override
 		public void saveTo(IWritableState state) {
 			super.saveTo(state);
-			tableFilterComponent.saveState(state.createChild(THREADS_TABLE_FILTER));
 			saveToLocal();
 		}
 
 		private void saveToLocal() {
 			flavorSelectorState = flavorSelector.getFlavorSelectorState();
-			histogramSelectionState = table.getManager().getSelectionState();
+			histogramSelectionState = getUndisposedTable().getManager().getSelectionState();
 			visibleRange = chart.getVisibleRange();
 		}
 
@@ -401,6 +408,51 @@ public class ThreadsPage extends AbstractDataPage {
 			this.reloadThreads = true;
 			lanes = new ThreadGraphLanes(() -> getDataSource(), () -> buildChart());
 			return lanes.initializeChartConfiguration(Stream.of(state.getChildren(THREAD_LANE)));
+		}
+
+		public void openViewThreadDetailsDialog(IState state) {
+			TablePopup tablePopup = new TablePopup(state);
+			OnePageWizardDialog.open(tablePopup, 500, 600);
+		}
+
+		private class TablePopup extends WizardPage {
+
+			private IState state;
+
+			protected TablePopup(IState state) {
+				super("ThreadDetailsPage"); //$NON-NLS-1$
+				this.state = state;
+				setTitle(Messages.ThreadsPage_TABLE_POPUP_TITLE);
+				setDescription(Messages.ThreadsPage_TABLE_POPUP_DESCRIPTION);
+			}
+
+			@Override
+			public void createControl(Composite parent) {
+
+				table = buildHistogram(parent, state.getChild(TABLE));
+				MCContextMenuManager mm = MCContextMenuManager.create(table.getManager().getViewer().getControl());
+				ColumnMenusFactory.addDefaultMenus(table.getManager(), mm);
+				table.getManager().getViewer().addSelectionChangedListener(e -> buildChart());
+				table.getManager().getViewer()
+						.addSelectionChangedListener(e -> pageContainer.showSelection(table.getSelection().getItems()));
+				SelectionStoreActionToolkit.addSelectionStoreActions(pageContainer.getSelectionStore(), table,
+						NLS.bind(Messages.ChartAndTableUI_HISTOGRAM_SELECTION, getName()), mm);
+				tableFilterComponent = FilterComponent.createFilterComponent(table.getManager().getViewer().getControl(),
+						table.getManager(), tableFilter, model.getItems().apply(pageFilter),
+						pageContainer.getSelectionStore()::getSelections, this::onFilterChangeHelper);
+				mm.add(tableFilterComponent.getShowFilterAction());
+				mm.add(tableFilterComponent.getShowSearchAction());
+
+				table.getManager().setSelectionState(histogramSelectionState);
+				tableFilterComponent.loadState(state.getChild(THREADS_TABLE_FILTER));
+				onFilterChange(tableFilter);
+
+				setControl(parent);
+			}
+
+			private void onFilterChangeHelper(IItemFilter filter) {
+				onFilterChange(filter);
+			}
 		}
 	}
 

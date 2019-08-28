@@ -510,6 +510,9 @@ public class Messages extends NLS {
 	public static String ThreadsPage_LANE_TOOLTIP_TITLE;
 	public static String ThreadsPage_NAME;
 	public static String ThreadsPage_RESET_CHART_TO_SELECTION_ACTION;
+	public static String ThreadsPage_TABLE_POPUP_DESCRIPTION;
+	public static String ThreadsPage_TABLE_POPUP_TITLE;
+	public static String ThreadsPage_VIEW_THREAD_DETAILS;
 	public static String TlabPage_PAGE_NAME;
 	public static String TlabPage_ROW_TLAB_ALLOCATIONS;
 	public static String TlabPage_ROW_TLAB_ALLOCATIONS_DESC;
