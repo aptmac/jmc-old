@@ -466,8 +466,7 @@ public class ThreadsPage extends AbstractDataPage {
 		visibleRange = editor.getRecordingRange();
 		editor.getRecordingRange().getEnd();
 		editor.getRecordingRange().getExtent();
-//		editor.getRecordingRange().getStart().in(UnitLookup.MILLISECOND);
-//		editor.getRecordingRange().getStart().
+
 	}
 
 	@Override
