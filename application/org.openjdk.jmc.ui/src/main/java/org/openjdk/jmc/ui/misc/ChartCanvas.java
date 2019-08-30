@@ -32,15 +32,11 @@
  */
 package org.openjdk.jmc.ui.misc;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.geom.Dimension2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.util.IPropertyChangeListener;

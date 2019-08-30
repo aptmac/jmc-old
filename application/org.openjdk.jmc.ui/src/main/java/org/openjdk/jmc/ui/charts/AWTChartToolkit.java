@@ -290,6 +290,7 @@ public class AWTChartToolkit {
 		ctx.setTransform(oldTransform);
 	}
 
+	// TODO: add offset attribute instead of hardcoding 180
 	public static void drawAxis(
 		Graphics2D ctx, SubdividedQuantityRange range, int axisPos, boolean labelAhead, int labelLimit,
 		boolean vertical) {
@@ -305,7 +306,7 @@ public class AWTChartToolkit {
 			drawUpArrow(ctx, axisPos, Y_AXIS_TOP_SPACE, Math.min(ARROW_SIZE, axisSize - 2));
 			labelSpacing = fm.getHeight() - textAscent;
 		} else {
-			ctx.drawLine(0, axisPos, axisSize - 1, axisPos);
+			ctx.drawLine(0, axisPos, axisSize + 1 + 180, axisPos);
 			labelSpacing = fm.charWidth(' ') * 2;
 		}
 
@@ -354,14 +355,14 @@ public class AWTChartToolkit {
 					} else {
 						label = formatter.format(currentTick);
 					}
-					ctx.drawLine(tickPos, axisPos - TICK_LINE, tickPos, axisPos + TICK_LINE);
+					ctx.drawLine(tickPos + 180, axisPos - TICK_LINE, tickPos + 180, axisPos + TICK_LINE);
 					int textXadjust = fm.stringWidth(label) / 2;
 					// FIXME: Decide if truncated labels should be shown
 //					if ((tickPos + textXadjust) >= axisSize) {
 					if (tickPos >= axisSize) {
 						break;
 					} else if ((tickPos - textXadjust) >= labelLimit) {
-						ctx.drawString(label, tickPos - textXadjust, labelYPos);
+						ctx.drawString(label, tickPos - textXadjust + 180, labelYPos);
 						labelLimit = tickPos + textXadjust + labelSpacing;
 						lastShownTick = currentTick;
 					}

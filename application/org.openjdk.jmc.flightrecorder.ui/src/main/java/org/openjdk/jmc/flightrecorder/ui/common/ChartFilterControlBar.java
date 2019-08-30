@@ -12,15 +12,13 @@ import org.eclipse.swt.widgets.DateTime;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
-import org.openjdk.jmc.ui.charts.XYChart;
 
 public class ChartFilterControlBar extends Composite {
 
 	private DateTime fromTime;
 	private DateTime toTime;
-	private XYChart chart;
 	
-	public ChartFilterControlBar(Composite parent) {
+	public ChartFilterControlBar(Composite parent, Listener resetListener) {
 		super(parent, SWT.NO_BACKGROUND);
 
 		RowLayout layout = new RowLayout();
@@ -70,15 +68,6 @@ public class ChartFilterControlBar extends Composite {
 		Button resetBtn = new Button(this, SWT.PUSH);
 		resetBtn.setText("Reset");
 		resetBtn.setLayoutData(new RowData(60, 20));
-		resetBtn.addListener(SWT.Selection,  new Listener() {
-			@Override
-			public void handleEvent(Event event) {
-				//
-			}
-		});
-	}
-
-	public void setChart(XYChart chart) {
-		this.chart = chart;
+		resetBtn.addListener(SWT.Selection, resetListener);
 	}
 }
