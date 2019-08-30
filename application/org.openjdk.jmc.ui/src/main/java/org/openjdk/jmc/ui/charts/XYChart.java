@@ -77,7 +77,7 @@ public class XYChart {
 	private SubdividedQuantityRange xBucketRange;
 	private SubdividedQuantityRange xTickRange;
 	private int axisWidth;
-	private TimelineCanvas timeline;
+	private TimelineCanvas timelineCanvas;
 
 	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot) {
 		this(range.getStart(), range.getEnd(), rendererRoot);
@@ -87,9 +87,9 @@ public class XYChart {
 		this(range.getStart(), range.getEnd(), rendererRoot, xOffset);
 	}
 
-	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, TimelineCanvas timeline) {
+	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, TimelineCanvas timelineCanvas) {
 		this(range.getStart(), range.getEnd(), rendererRoot, xOffset);
-		this.timeline = timeline;
+		this.timelineCanvas = timelineCanvas;
 	}
 	
 	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, int bucketWidth) {
@@ -161,16 +161,10 @@ public class XYChart {
 		SubdividedQuantityRange fullRangeAxis = new SubdividedQuantityRange(start, end, axisWidth, 25);
 		int x1 = (int) fullRangeAxis.getPixel(currentStart);
 		int x2 = (int) Math.ceil(fullRangeAxis.getPixel(currentEnd));
-		if (timeline != null) {
-			timeline.renderTimeline(x1, x2, axisWidth);
-			context.setColor(Palette.PF_BLUE.getAWTColor());
-			context.drawLine(0, 0, 25, 0);
-			context.setPaint(Palette.PF_ORANGE_400.getAWTColor());
-			context.fillRect(x1, 0, x2 - x1, RANGE_INDICATOR_HEIGHT);
-			context.setPaint(Palette.PF_BLACK_600.getAWTColor());
-			context.drawRect(0, 0, axisWidth - 1, RANGE_INDICATOR_HEIGHT);
+		
+		if (timelineCanvas != null) {
+			timelineCanvas.renderRangeIndicator(x1, x2, axisWidth);
 		} else {
-			// init the timeline canvas in the ChartAndTableUI and have it render the timeline here.
 			context.setPaint(RANGE_INDICATION_COLOR);
 			context.fillRect(x1, rangeIndicatorY, x2 - x1, RANGE_INDICATOR_HEIGHT);
 			context.setPaint(Color.DARK_GRAY);
@@ -183,7 +177,11 @@ public class XYChart {
 		AWTChartToolkit.drawGrid(context, xTickRange, axisHeight, false);
 		// Attempt to make graphs so low they cover the axis show by drawing the full axis first ...
 		context.setPaint(Color.BLACK);
-		AWTChartToolkit.drawAxis(context, xTickRange, axisHeight - 1, false, 1 - xOffset, false);
+		if (timelineCanvas != null) {
+			timelineCanvas.renderAxis(xTickRange);
+		} else {
+			AWTChartToolkit.drawAxis(context, xTickRange, axisHeight - 1, false, 1 - xOffset, false);
+		}
 		// ... then the graph ...
 		rendererResult = rendererRoot.render(context, xBucketRange, axisHeight);
 		AffineTransform oldTransform = context.getTransform();

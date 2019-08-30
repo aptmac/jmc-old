@@ -48,6 +48,8 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 
@@ -77,10 +79,8 @@ import org.openjdk.jmc.ui.charts.IXDataRenderer;
 import org.openjdk.jmc.ui.charts.RendererToolkit;
 import org.openjdk.jmc.ui.charts.TimelineCanvas;
 import org.openjdk.jmc.ui.charts.XYChart;
-import org.openjdk.jmc.ui.column.ColumnMenusFactory;
 import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.handlers.ActionToolkit;
-import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
 import org.openjdk.jmc.ui.misc.ActionUiToolkit;
 import org.openjdk.jmc.ui.misc.ChartCanvas;
 import org.openjdk.jmc.ui.misc.PersistableSashForm;
@@ -91,6 +91,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 	private static final String TABLE = "table"; //$NON-NLS-1$
 	private static final String CHART = "chart"; //$NON-NLS-1$
 	private static final String SELECTED = "selected"; //$NON-NLS-1$
+	private static final int X_OFFSET = 180;
 	private final IItemFilter pageFilter;
 	protected final StreamModel model;
 	protected CheckboxTableViewer chartLegend;
@@ -109,6 +110,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 	protected FlavorSelector flavorSelector;
 	private Composite hiddenTableContainer;
 
+	private TimelineCanvas timelineCanvas;
 	protected Composite controls;
 	public ChartFilterControlBar ctf;
 
@@ -137,52 +139,63 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		chartContainer.setLayout(new GridLayout(1, false));
 		chartContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-		// Create a container to hold the filter toolbar (2 layouts)
+		// Container to hold the filter controls
 		controls = new Composite(chartContainer, SWT.NO_BACKGROUND);
 		controls.setLayout(new GridLayout(1, false));
 		controls.setBackground(Palette.PF_BLACK_300.getSWTColor());
 		controls.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		ctf = new ChartFilterControlBar(controls);
+		Listener resetListener = new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				onSetRange(false);
+			}
+		};
+		ctf = new ChartFilterControlBar(controls, resetListener);
 
-		// Create a container to hold the Chart + Display Toolbar
+		// Container to hold the chart (& timeline) and display toolbar
 		Composite graphContainer = toolkit.createComposite(chartContainer);
-		graphContainer.setLayout(new GridLayout(2, false));
-		graphContainer.setBackground(Palette.PF_LIGHT_BLUE_100.getSWTColor());
-		graphContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
+		GridLayout gridLayout = new GridLayout(2, false);
+		gridLayout.marginWidth = 0;
+		gridLayout.marginHeight = 0;
+		graphContainer.setLayout(gridLayout);
+		graphContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
+		// Container to hold the chart and timeline canvas
 		Composite chartAndTimelineContainer = toolkit.createComposite(graphContainer);
-		chartAndTimelineContainer.setLayout(new GridLayout(1, false));
+		gridLayout = new GridLayout(1, false);
+		gridLayout.verticalSpacing = 2;
+		gridLayout.marginWidth = 0;
+		gridLayout.marginHeight = 0;
+		chartAndTimelineContainer.setLayout(gridLayout);
 		chartAndTimelineContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-
 		ScrolledCompositeToolkit sct = new ScrolledCompositeToolkit(Display.getCurrent());
 		ScrolledComposite sc = sct.createScrolledComposite(chartAndTimelineContainer);
 		sc.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		chartCanvas = new ChartCanvas(sc);
+		chartCanvas.setLayout(new GridLayout(1, false));
 		chartCanvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		sc.setContent(chartCanvas);
 		sc.setAlwaysShowScrollBars(true);
 		sc.setExpandHorizontal(true);
 		sc.setExpandVertical(true);
-		ChartDisplayControlBar cdcb = new ChartDisplayControlBar(graphContainer);
+		timelineCanvas = new TimelineCanvas(chartAndTimelineContainer, X_OFFSET);
+		GridData gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+		gridData.heightHint = 40; // TODO: replace with constant
+		timelineCanvas.setLayoutData(gridData);
 
-//		timelineContainer = toolkit.createComposite(chartAndTimelineContainer);
-//		timelineContainer.setLayout(new GridLayout(1, false));
-//		timelineContainer.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false));
-		chartAndTimelineContainer.setBackground(Palette.PF_PURPLE_100.getSWTColor());
-		TimelineCanvas timelineCanvas = new TimelineCanvas(chartAndTimelineContainer);
-		timelineCanvas.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false));
+		// add the display bar to the right of the chart scrolled composite
+		ChartDisplayControlBar cdcb = new ChartDisplayControlBar(graphContainer);
 
 		allChartSeriesActions = initializeChartConfiguration(state);
 		IState chartState = state.getChild(CHART);
 		ActionToolkit.loadCheckState(chartState, allChartSeriesActions.stream());
 		chartLegend = ActionUiToolkit.buildCheckboxViewer(chartContainer, allChartSeriesActions.stream());
-		GridData gd = new GridData(SWT.FILL, SWT.FILL, false, true);
-		gd.widthHint = 180;
-		chartLegend.getControl().setLayoutData(gd);
+		gridData = new GridData(SWT.FILL, SWT.FILL, false, true);
+		gridData.widthHint = 180;
+		chartLegend.getControl().setLayoutData(gridData);
 		PersistableSashForm.loadState(sash, state.getChild(SASH));
 		DataPageToolkit.createChartTimestampTooltip(chartCanvas);
 
-		// Going to need to create a new container for the chart + timeline view and add it to the pageContainer.
 		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), 180, timelineCanvas);
 		DataPageToolkit.setChart(chartCanvas, chart, pageContainer::showSelection);
 		SelectionStoreActionToolkit.addSelectionStoreRangeActions(pageContainer.getSelectionStore(), chart,
@@ -193,7 +206,6 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		// Temp: Pass the chart into the toolbars for information retrieval
 		cdcb.setCanvas(chartCanvas);
 		cdcb.setChart(chart);
-		ctf.setChart(chart);
 
 		if (chartState != null) {
 			final String legendSelection = chartState.getAttribute(SELECTED);

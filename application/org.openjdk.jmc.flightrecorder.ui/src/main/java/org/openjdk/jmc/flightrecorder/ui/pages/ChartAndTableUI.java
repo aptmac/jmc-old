@@ -42,13 +42,10 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
-import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 
@@ -63,23 +60,18 @@ import org.openjdk.jmc.flightrecorder.JfrAttributes;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
 import org.openjdk.jmc.flightrecorder.ui.IPageUI;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
-import org.openjdk.jmc.flightrecorder.ui.common.ChartDisplayControlBar;
-import org.openjdk.jmc.flightrecorder.ui.common.ChartFilterControlBar;
 import org.openjdk.jmc.flightrecorder.ui.common.DataPageToolkit;
 import org.openjdk.jmc.flightrecorder.ui.common.FilterComponent;
 import org.openjdk.jmc.flightrecorder.ui.common.FlavorSelector;
 import org.openjdk.jmc.flightrecorder.ui.common.FlavorSelector.FlavorSelectorState;
 import org.openjdk.jmc.flightrecorder.ui.common.ItemHistogram;
 import org.openjdk.jmc.flightrecorder.ui.common.ItemHistogram.HistogramSelection;
-import org.openjdk.jmc.flightrecorder.ui.common.ScrolledCompositeToolkit;
 import org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages;
 import org.openjdk.jmc.flightrecorder.ui.selection.SelectionStoreActionToolkit;
 import org.openjdk.jmc.ui.charts.IXDataRenderer;
 import org.openjdk.jmc.ui.charts.RendererToolkit;
-import org.openjdk.jmc.ui.charts.TimelineCanvas;
 import org.openjdk.jmc.ui.charts.XYChart;
 import org.openjdk.jmc.ui.column.ColumnMenusFactory;
-import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.handlers.ActionToolkit;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
 import org.openjdk.jmc.ui.misc.ActionUiToolkit;
@@ -92,6 +84,7 @@ abstract class ChartAndTableUI implements IPageUI {
 	private static final String TABLE = "table"; //$NON-NLS-1$
 	private static final String CHART = "chart"; //$NON-NLS-1$
 	private static final String SELECTED = "selected"; //$NON-NLS-1$
+	private static final int X_OFFSET = 180;
 	private final IItemFilter pageFilter;
 	private final StreamModel model;
 	protected CheckboxTableViewer chartLegend;
@@ -99,7 +92,6 @@ abstract class ChartAndTableUI implements IPageUI {
 	protected final Composite chartContainer;
 	protected final ChartCanvas chartCanvas;
 	protected final FilterComponent tableFilterComponent;
-//	protected final Composite timelineContainer;
 	protected final ItemHistogram table;
 	protected final SashForm sash;
 	private final IPageContainer pageContainer;
@@ -108,8 +100,6 @@ abstract class ChartAndTableUI implements IPageUI {
 	private IRange<IQuantity> timeRange;
 	protected XYChart chart;
 	protected FlavorSelector flavorSelector;
-	protected Composite controls;
-	public ChartFilterControlBar ctf;
 
 	ChartAndTableUI(IItemFilter pageFilter, StreamModel model, Composite parent, FormToolkit toolkit,
 			IPageContainer pageContainer, IState state, String sectionTitle, IItemFilter tableFilter, Image icon,
@@ -136,43 +126,9 @@ abstract class ChartAndTableUI implements IPageUI {
 		mm.add(tableFilterComponent.getShowSearchAction());
 
 		chartContainer = toolkit.createComposite(sash);
-		chartContainer.setLayout(new GridLayout(1, false));
-		chartContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-
-		// Create a container to hold the filter toolbar (2 layouts)
-		controls = new Composite(chartContainer, SWT.NO_BACKGROUND);
-		controls.setLayout(new GridLayout(1, false));
-		controls.setBackground(Palette.PF_BLACK_300.getSWTColor());
-		controls.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		ctf = new ChartFilterControlBar(controls);
-
-		// Create a container to hold the Chart + Display Toolbar
-		Composite graphContainer = toolkit.createComposite(chartContainer);
-		graphContainer.setLayout(new GridLayout(2, false));
-		graphContainer.setBackground(Palette.PF_LIGHT_BLUE_100.getSWTColor());
-		graphContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
-
-		Composite chartAndTimelineContainer = toolkit.createComposite(graphContainer);
-		chartAndTimelineContainer.setLayout(new GridLayout(1, false));
-		chartAndTimelineContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-
-		ScrolledCompositeToolkit sct = new ScrolledCompositeToolkit(Display.getCurrent());
-		ScrolledComposite sc = sct.createScrolledComposite(chartAndTimelineContainer);
-		sc.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		chartCanvas = new ChartCanvas(sc);
+		chartContainer.setLayout(new GridLayout(2, false));
+		chartCanvas = new ChartCanvas(chartContainer);
 		chartCanvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		sc.setContent(chartCanvas);
-		sc.setAlwaysShowScrollBars(true);
-		sc.setExpandHorizontal(true);
-		sc.setExpandVertical(true);
-		ChartDisplayControlBar cdcb = new ChartDisplayControlBar(graphContainer);
-
-//		timelineContainer = toolkit.createComposite(chartAndTimelineContainer);
-//		timelineContainer.setLayout(new GridLayout(1, false));
-//		timelineContainer.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false));
-		chartAndTimelineContainer.setBackground(Palette.PF_PURPLE_100.getSWTColor());
-		TimelineCanvas timelineCanvas = new TimelineCanvas(chartAndTimelineContainer);
-		timelineCanvas.setLayoutData(new GridData(SWT.FILL, SWT.BOTTOM, true, false));
 
 		allChartSeriesActions = initializeChartConfiguration(state);
 		IState chartState = state.getChild(CHART);
@@ -184,18 +140,12 @@ abstract class ChartAndTableUI implements IPageUI {
 		PersistableSashForm.loadState(sash, state.getChild(SASH));
 		DataPageToolkit.createChartTimestampTooltip(chartCanvas);
 
-		// Going to need to create a new container for the chart + timeline view and add it to the pageContainer.
-		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), 180, timelineCanvas);
+		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), X_OFFSET);
 		DataPageToolkit.setChart(chartCanvas, chart, pageContainer::showSelection);
 		SelectionStoreActionToolkit.addSelectionStoreRangeActions(pageContainer.getSelectionStore(), chart,
 				JfrAttributes.LIFETIME, NLS.bind(Messages.ChartAndTableUI_TIMELINE_SELECTION, form.getText()),
 				chartCanvas.getContextMenu());
 		buildChart();
-
-		// Temp: Pass the chart into the toolbars for information retrieval
-		cdcb.setCanvas(chartCanvas);
-		cdcb.setChart(chart);
-		ctf.setChart(chart);
 
 		if (chartState != null) {
 			final String legendSelection = chartState.getAttribute(SELECTED);
