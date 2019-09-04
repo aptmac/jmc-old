@@ -115,4 +115,10 @@ public class ChartDisplayControlBar extends Composite {
 		Button durationBtn = new Button(this, SWT.TOGGLE);
 		durationBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_SCALE_TO_FIT));
 	}
+
+	public void resetZoomScale() {
+//		this.scale.setSelection(scale.getMaximum());
+//		zoomValue = 0;
+//		text.setText(Integer.toString(0));
+	}
 }

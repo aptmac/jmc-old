@@ -75,6 +75,7 @@ import org.openjdk.jmc.ui.common.util.Environment.OSType;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
 
 public class ChartCanvas extends Canvas {
+	private static int MIN_LANE_HEIGHT = 50;
 	private int lastMouseX = -1;
 	private int lastMouseY = -1;
 	private List<Rectangle2D> highlightRects;
@@ -217,19 +218,21 @@ public class ChartCanvas extends Canvas {
 
 		@Override
 		public void paintControl(PaintEvent e) {
-			Rectangle rect = getClientArea();
+			Rectangle rect = new Rectangle(0, 0, getParent().getSize().x, getParent().getSize().y);
+			if (getNumItems() == 1 || (MIN_LANE_HEIGHT * getNumItems() < rect.height)) {
+				// it fills the height
+			} else {
+				rect.height = MIN_LANE_HEIGHT * getNumItems();
+			}
+
 			if (awtNeedsRedraw || !awtCanvas.hasImage(rect.width, rect.height)) {
 				Graphics2D g2d = awtCanvas.getGraphics(rect.width, rect.height);
-				if (getNumItems() > 0) {
-					g2d.getFontMetrics().getHeight();
-					rect.height = 3 * g2d.getFontMetrics().getHeight() * getNumItems();
-				}
 				g2d.setColor(Palette.PF_BLACK_100.getAWTColor());
 				g2d.fillRect(0, 0, rect.width, rect.height);
 				Point adjusted = translateDisplayToImageCoordinates(rect.width, rect.height);
 				render(g2d, adjusted.x, adjusted.y);
 				if (getParent() instanceof ScrolledComposite) {
-					((ScrolledComposite) getParent()).setMinSize(rect.width, rect.height);
+					((ScrolledComposite) getParent()).setMinSize(adjusted.x, adjusted.y);
 				}
 				if (highlightRects != null) {
 					updateHighlightRects();
