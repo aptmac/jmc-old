@@ -32,11 +32,14 @@
  */
 package org.openjdk.jmc.ui.misc;
 
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -74,7 +77,7 @@ import org.openjdk.jmc.ui.common.util.Environment;
 import org.openjdk.jmc.ui.common.util.Environment.OSType;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
 
-public class ChartCanvas extends Canvas {
+public class ChartTextCanvas extends Canvas {
 	private static int MIN_LANE_HEIGHT = 50;
 	private int lastMouseX = -1;
 	private int lastMouseY = -1;
@@ -89,6 +92,7 @@ public class ChartCanvas extends Canvas {
 		Point highlightSelectionEnd;
 		Point lastSelection;
 		boolean selectionIsClick = false;
+		Set<Point> highlightPoints;
 
 		@Override
 		public void mouseDown(MouseEvent e) {
@@ -109,6 +113,8 @@ public class ChartCanvas extends Canvas {
 			 * org.eclipse.swt.custom.StyledText.handleMouseDown(Event).
 			 */
 			if ((e.button == 1) && ((e.stateMask & SWT.MOD4) == 0) && ((e.stateMask & SWT.CTRL) == 0 ) && ((e.stateMask & SWT.SHIFT) == 0 )) {
+				highlightPoints = new HashSet<>();
+				highlightPoints.add(new Point(e.x, e.y));
 				selectionStartX = e.x;
 				selectionStartY = e.y;
 				highlightSelectionEnd = new Point(-1, -1);
@@ -116,10 +122,13 @@ public class ChartCanvas extends Canvas {
 				selectionIsClick = true;
 				toggleSelect(selectionStartX, selectionStartY);
 			} else if (((e.stateMask & SWT.CTRL) != 0) && (e.button == 1)) {
+				highlightPoints.add(new Point(e.x, e.y));
 				select(e.x, e.x, e.y, e.y, false);
 				if (selectionListener != null) {
 					selectionListener.run();
 				}
+				// if selectionEnd variables are non-zero (large selection in progress)
+				//    if the ctrl+clicked is in the same selection, then it needs to be un-highlighted
 			} else if (((e.stateMask & SWT.SHIFT) != 0) && (e.button == 1)) {
 				 if (highlightSelectionEnd.y == -1) {
 					highlightSelectionEnd = new Point(e.x, e.y);
@@ -308,7 +317,7 @@ public class ChartCanvas extends Canvas {
 		public void mouseEnter(MouseEvent e) {
 			stop();
 			Control stealWheelFrom = getDisplay().getFocusControl();
-			if (stealWheelFrom != null && stealWheelFrom != ChartCanvas.this) {
+			if (stealWheelFrom != null && stealWheelFrom != ChartTextCanvas.this) {
 				stealWheelFrom.addListener(SWT.MouseVerticalWheel, this);
 				stealWheelFrom.addFocusListener(this);
 				this.stealWheelFrom = stealWheelFrom;
@@ -346,13 +355,6 @@ public class ChartCanvas extends Canvas {
 				break;
 			default:
 				switch (event.keyCode) {
-				case SWT.ESC:
-					awtChart.clearSelection();
-					if (selectionListener != null) {
-						selectionListener.run();
-					}
-					redrawChart();
-					break;
 				case SWT.ARROW_RIGHT:
 					pan(10);
 					break;
@@ -382,7 +384,7 @@ public class ChartCanvas extends Canvas {
 
 		@Override
 		public void propertyChange(PropertyChangeEvent event) {
-			redrawChart();
+			redrawChartText();
 		}
 
 	}
@@ -396,15 +398,15 @@ public class ChartCanvas extends Canvas {
 	private final double xScale = Display.getDefault().getDPI().x / Environment.getNormalDPI();
 	private final double yScale = Display.getDefault().getDPI().y / Environment.getNormalDPI();
 
-	private final AwtCanvas awtCanvas = new AwtCanvas();
+	public final AwtCanvas awtCanvas = new AwtCanvas();
 	private boolean awtNeedsRedraw;
 	private Runnable selectionListener;
 	private IPropertyChangeListener aaListener;
 	private XYChart awtChart;
+	private ChartCanvas chartCanvas;
 	private MCContextMenuManager chartMenu;
-	private ChartTextCanvas textCanvas;
 
-	public ChartCanvas(Composite parent) {
+	public ChartTextCanvas(Composite parent) {
 		super(parent, SWT.NO_BACKGROUND);
 		addPaintListener(new Painter());
 		Selector selector = new Selector();
@@ -427,9 +429,9 @@ public class ChartCanvas extends Canvas {
 	}
 
 	private void vBarScroll() {
-		if (textCanvas != null) {
+		if (chartCanvas != null) {
 			Point location = ((ScrolledComposite) getParent()).getOrigin();
-			textCanvas.syncScroll(location);
+			chartCanvas.syncScroll(location);
 		}
 	}
 
@@ -443,7 +445,7 @@ public class ChartCanvas extends Canvas {
 
 	private void render(Graphics2D context, int width, int height) {
 		if (awtChart != null) {
-			awtChart.renderChart(context, width, height);
+			awtChart.renderText(context, width, height);
 		}
 	}
 
@@ -533,8 +535,10 @@ public class ChartCanvas extends Canvas {
 		}
 		if (!newRects.equals(highlightRects)) {
 			highlightRects = newRects;
-			textCanvas.syncHighlightedRectangles(highlightRects);
 			redraw();
+			if (chartCanvas != null ) {
+				chartCanvas.syncHighlightedRectangles(highlightRects);
+			}
 		}
 	}
 
@@ -556,26 +560,26 @@ public class ChartCanvas extends Canvas {
 
 	private void pan(int rightPercent) {
 		if ((awtChart != null) && awtChart.pan(rightPercent)) {
-			redrawChart();
+			redrawChartText();
 		}
 	}
 
 	private void zoom(int zoomInSteps) {
 		if ((awtChart != null) && awtChart.zoom(zoomInSteps)) {
-			redrawChart();
+			redrawChartText();
 		}
 	}
 
 	private void zoom(int x, int zoomInSteps) {
 		if ((awtChart != null) && awtChart.zoom(x, zoomInSteps)) {
-			redrawChart();
+			redrawChartText();
 		}
 	}
 
-	private void select(int x1, int x2, int y1, int y2, boolean clear) {
+	public void select(int x1, int x2, int y1, int y2, boolean clear) {
 		if ((awtChart != null) && awtChart.select(x1, x2, y1, y2, clear)) {
-			redrawChart();
 			redrawChartText();
+			redrawChart();
 		}
 	}
 
@@ -608,25 +612,27 @@ public class ChartCanvas extends Canvas {
 				}
 			} else {
 				if (!awtChart.select(p.x, p.x, p.y, p.y, true)) {
+					// range is [null, null]
 					awtChart.clearSelection();
 				}
 			}
-			redrawChart();
 			redrawChartText();
+			redrawChart();
 		}
 	}
 
 	public void setChart(XYChart awtChart) {
 		this.awtChart = awtChart;
 		notifyListener();
-		redrawChart();
+		redrawChartText();
 	}
 
-	public void setTextCanvas(ChartTextCanvas textCanvas) {
-		this.textCanvas = textCanvas;
+	public void setChartCanvas(ChartCanvas chartCanvas) {
+		this.chartCanvas = chartCanvas;
 	}
 
 	public void syncScroll(Point scrollPoint) {
+		getParent().getVerticalBar().setVisible(false);
 		((ScrolledComposite) getParent()).setOrigin(scrollPoint);
 	}
 
@@ -634,7 +640,7 @@ public class ChartCanvas extends Canvas {
 		assert awtChart != null;
 		awtChart.setRendererRoot(rendererRoot);
 		notifyListener();
-		redrawChart();
+		redrawChartText();
 	}
 
 	public void setSelectionListener(Runnable selectionListener) {
@@ -657,15 +663,14 @@ public class ChartCanvas extends Canvas {
 	/**
 	 * Mark both the (AWT) chart and the SWT control as needing a redraw.
 	 */
-	public void redrawChart() {
+	public void redrawChartText() {
 		awtNeedsRedraw = true;
 		redraw();
 	}
 
-	private void redrawChartText() {
-		if (textCanvas != null) {
-			textCanvas.redrawChartText();
+	private void redrawChart() {
+		if ( chartCanvas != null) {
+			chartCanvas.redrawChart();
 		}
 	}
-
 }

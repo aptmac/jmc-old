@@ -359,6 +359,7 @@ public class ThreadsPage extends AbstractDataPage {
 							.getSelectedRows((object, items) -> lanes.buildThreadRenderer(object, items))
 							.collect(Collectors.toList());
 					chartCanvas.setNumItems(this.threadRows.size());
+					textCanvas.setNumItems(this.threadRows.size());
 					this.isChartModified = false;
 					if (this.isChartMenuActionsInit) {
 						setResetChartActionEnablement(false);

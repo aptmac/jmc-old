@@ -83,6 +83,7 @@ import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.handlers.ActionToolkit;
 import org.openjdk.jmc.ui.misc.ActionUiToolkit;
 import org.openjdk.jmc.ui.misc.ChartCanvas;
+import org.openjdk.jmc.ui.misc.ChartTextCanvas;
 import org.openjdk.jmc.ui.misc.PersistableSashForm;
 
 abstract class ChartAndPopupTableUI implements IPageUI {
@@ -98,6 +99,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 	protected final Form form;
 	protected final Composite chartContainer;
 	protected final ChartCanvas chartCanvas;
+	protected final ChartTextCanvas textCanvas;
 	protected FilterComponent tableFilterComponent;
 	protected ItemHistogram table;
 	protected ItemHistogram hiddenTable;
@@ -169,16 +171,39 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		gridLayout.marginHeight = 0;
 		chartAndTimelineContainer.setLayout(gridLayout);
 		chartAndTimelineContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+		// Container to hold the text and chart canvases
+		Composite chartAndTextContainer = toolkit.createComposite(chartAndTimelineContainer);
+		gridLayout = new GridLayout(2, false);
+		gridLayout.horizontalSpacing = 0;
+		chartAndTextContainer.setLayout(gridLayout);
+		chartAndTextContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
 		ScrolledCompositeToolkit sct = new ScrolledCompositeToolkit(Display.getCurrent());
-		ScrolledComposite sc = sct.createScrolledComposite(chartAndTimelineContainer);
-		sc.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		chartCanvas = new ChartCanvas(sc);
-		chartCanvas.setLayout(new GridLayout(1, false));
+		ScrolledComposite scText = sct.createScrolledComposite(chartAndTextContainer);
+		GridData scTextGd = new GridData(SWT.FILL, SWT.FILL, false, true);
+		scTextGd.widthHint = 180;
+		scText.setLayoutData(scTextGd);
+		textCanvas = new ChartTextCanvas(scText);
+		textCanvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+		ScrolledComposite scChart = sct.createScrolledComposite(chartAndTextContainer);
+		scChart.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		chartCanvas = new ChartCanvas(scChart);
 		chartCanvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		sc.setContent(chartCanvas);
-		sc.setAlwaysShowScrollBars(true);
-		sc.setExpandHorizontal(true);
-		sc.setExpandVertical(true);
+
+		chartCanvas.setTextCanvas(textCanvas);
+		textCanvas.setChartCanvas(chartCanvas);
+
+		scChart.setContent(chartCanvas);
+		scChart.setAlwaysShowScrollBars(true);
+		scChart.setExpandHorizontal(true);
+		scChart.setExpandVertical(true);
+		scText.setContent(textCanvas);
+		scText.setAlwaysShowScrollBars(false);
+		scText.setExpandHorizontal(true);
+		scText.setExpandVertical(true);
+
 		timelineCanvas = new TimelineCanvas(chartAndTimelineContainer, X_OFFSET);
 		GridData gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
 		gridData.heightHint = 40; // TODO: replace with constant
@@ -199,6 +224,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 
 		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), 180, timelineCanvas);
 		DataPageToolkit.setChart(chartCanvas, chart, pageContainer::showSelection);
+		DataPageToolkit.setChart(textCanvas, chart, pageContainer::showSelection);
 		SelectionStoreActionToolkit.addSelectionStoreRangeActions(pageContainer.getSelectionStore(), chart,
 				JfrAttributes.LIFETIME, NLS.bind(Messages.ChartAndTableUI_TIMELINE_SELECTION, form.getText()),
 				chartCanvas.getContextMenu());
@@ -276,6 +302,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 	protected void buildChart() {
 		IXDataRenderer rendererRoot = getChartRenderer(getItems(), getUndisposedTable().getSelection());
 		chartCanvas.replaceRenderer(rendererRoot);
+		textCanvas.replaceRenderer(rendererRoot);
 	}
 
 	private IItemCollection getItems() {
