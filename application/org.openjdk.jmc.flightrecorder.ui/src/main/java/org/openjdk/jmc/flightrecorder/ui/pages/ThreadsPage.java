@@ -180,7 +180,6 @@ public class ThreadsPage extends AbstractDataPage {
 		private static final String TABLE = "table"; //$NON-NLS-1$
 		private Boolean isChartMenuActionsInit;
 		private Boolean isChartModified;
-		private Boolean isToolbarAction = false;
 		private Boolean reloadThreads;
 		private IAction hideThreadAction;
 		private IAction resetChartAction;
@@ -200,8 +199,8 @@ public class ThreadsPage extends AbstractDataPage {
 					.add(ActionToolkit.action(() -> lanes.openEditLanesDialog(mm, false), Messages.ThreadsPage_EDIT_LANES,
 							FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_LANES_EDIT)));
 			form.getToolBarManager()
-			.add(ActionToolkit.action(() -> openViewThreadDetailsDialog(state), Messages.ThreadsPage_VIEW_THREAD_DETAILS,
-					FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_TABLE)));
+					.add(ActionToolkit.action(() -> openViewThreadDetailsDialog(state), Messages.ThreadsPage_VIEW_THREAD_DETAILS,
+							FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_TABLE)));
 			form.getToolBarManager().update(true);
 			chartLegend.getControl().dispose();
 			buildChart();
@@ -218,7 +217,7 @@ public class ThreadsPage extends AbstractDataPage {
 				}
 			});
 			controls.pack();
-			
+
 //			Composite embed = new Composite(controls, SWT.EMBEDDED);
 //			embed.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 //			Frame frame = SWT_AWT.new_Frame(embed);
@@ -410,9 +409,10 @@ public class ThreadsPage extends AbstractDataPage {
 			return lanes.initializeChartConfiguration(Stream.of(state.getChildren(THREAD_LANE)));
 		}
 
+		private TablePopup tablePopup;
 		public void openViewThreadDetailsDialog(IState state) {
-			TablePopup tablePopup = new TablePopup(state);
-			OnePageWizardDialog.open(tablePopup, 500, 600);
+			tablePopup = new TablePopup(state);
+			OnePageWizardDialog.openAndHideCancelButton(tablePopup, 500, 600);
 		}
 
 		private class TablePopup extends WizardPage {
@@ -428,7 +428,6 @@ public class ThreadsPage extends AbstractDataPage {
 
 			@Override
 			public void createControl(Composite parent) {
-
 				table = buildHistogram(parent, state.getChild(TABLE));
 				MCContextMenuManager mm = MCContextMenuManager.create(table.getManager().getViewer().getControl());
 				ColumnMenusFactory.addDefaultMenus(table.getManager(), mm);

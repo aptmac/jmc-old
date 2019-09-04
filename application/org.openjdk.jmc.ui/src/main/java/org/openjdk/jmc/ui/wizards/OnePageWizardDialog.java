@@ -150,4 +150,12 @@ public class OnePageWizardDialog extends SizeConstrainedWizardDialog {
 		d.setHeightConstraint(height, height);
 		return d.open();
 	}
+
+	public static int openAndHideCancelButton(IWizardPage wp, int width, int height) {
+		OnePageWizardDialog d = new OnePageWizardDialog(Display.getCurrent().getActiveShell(), wp);
+		d.setHideCancelButton(true);
+		d.setWidthConstraint(width, width);
+		d.setHeightConstraint(height, height);
+		return d.open();
+	}
 }

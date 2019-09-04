@@ -113,6 +113,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 	private TimelineCanvas timelineCanvas;
 	protected Composite controls;
 	public ChartFilterControlBar ctf;
+	private ChartDisplayControlBar cdcb;
 
 	ChartAndPopupTableUI(IItemFilter pageFilter, StreamModel model, Composite parent, FormToolkit toolkit,
 			IPageContainer pageContainer, IState state, String sectionTitle, IItemFilter tableFilter, Image icon,
@@ -184,7 +185,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		timelineCanvas.setLayoutData(gridData);
 
 		// add the display bar to the right of the chart scrolled composite
-		ChartDisplayControlBar cdcb = new ChartDisplayControlBar(graphContainer);
+		cdcb = new ChartDisplayControlBar(graphContainer);
 
 		allChartSeriesActions = initializeChartConfiguration(state);
 		IState chartState = state.getChild(CHART);
@@ -246,6 +247,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 	private void onSetRange(Boolean useRange) {
 		IRange<IQuantity> range = useRange ? timeRange : pageContainer.getRecordingRange();
 		chart.setVisibleRange(range.getStart(), range.getEnd());
+		cdcb.resetZoomScale();
 		buildChart();
 	}
 

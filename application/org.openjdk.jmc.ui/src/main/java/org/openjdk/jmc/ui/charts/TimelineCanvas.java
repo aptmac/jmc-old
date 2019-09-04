@@ -47,6 +47,7 @@ public class TimelineCanvas extends Canvas {
 		public void paintControl(PaintEvent e) {
 			Rectangle rect = getClientArea();
 			g2d = awtCanvas.getGraphics(rect.width, rect.height);
+
 			// Draw the background
 			g2d.setColor(Palette.PF_BLACK_100.getAWTColor());
 			g2d.fillRect(0, 0, rect.width, rect.height);

@@ -71,13 +71,15 @@ public class XYChart {
 	private IQuantity currentEnd;
 
 	private final Set<Object> selectedRows = new HashSet<>();
+	private int axisWidth;
+	private int rowColorCounter;
 	private IQuantity selectionStart;
 	private IQuantity selectionEnd;
 	private SubdividedQuantityRange xAxis;
 	private SubdividedQuantityRange xBucketRange;
 	private SubdividedQuantityRange xTickRange;
-	private int axisWidth;
 	private TimelineCanvas timelineCanvas;
+
 
 	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot) {
 		this(range.getStart(), range.getEnd(), rendererRoot);
@@ -151,7 +153,8 @@ public class XYChart {
 			xTickRange = new SubdividedQuantityRange(currentStart, currentEnd, axisWidth, 100);
 			AffineTransform oldTransform = context.getTransform();
 			context.translate(xOffset, 0);
-			doRender(context, height - Y_OFFSET);
+//			doRender(context, height - Y_OFFSET);
+			doRender(context, height); // no need for offset because timeline is rendered elsewhere
 			context.setTransform(oldTransform);
 		}
 	}
@@ -173,6 +176,7 @@ public class XYChart {
 	}
 
 	private void doRender(Graphics2D context, int axisHeight) {
+		rowColorCounter = 0;
 		context.setPaint(Color.LIGHT_GRAY);
 		AWTChartToolkit.drawGrid(context, xTickRange, axisHeight, false);
 		// Attempt to make graphs so low they cover the axis show by drawing the full axis first ...
@@ -185,7 +189,6 @@ public class XYChart {
 		// ... then the graph ...
 		rendererResult = rendererRoot.render(context, xBucketRange, axisHeight);
 		AffineTransform oldTransform = context.getTransform();
-		c = 0;
 		renderText(context, rendererResult);
 		context.setTransform(oldTransform);
 		if (!selectedRows.isEmpty()) {
@@ -218,15 +221,16 @@ public class XYChart {
 		context.translate(0, row.getHeight());
 	}
 
-	int c = 0;
+	// Paint the background of every-other row in a slightly different shade
+	// to better differentiate the thread lanes from one another
 	private void paintRowBackground(Graphics2D context, int height) {
-       if (c % 2 == 0) {
+       if (rowColorCounter % 2 == 0) {
            context.setColor(Palette.PF_BLACK_100.getAWTColor());
        } else {
-           context.setColor(Palette.PF_BLACK_300.getAWTColor());
+           context.setColor(Palette.PF_BLACK_200.getAWTColor());
        }
-       context.fillRect(-xOffset, (height - context.getFontMetrics().getHeight() / 2) - 35, 180, height - 4);
-       c++;
+       context.fillRect(-xOffset, 0, 180, height);
+       rowColorCounter++;
    }
 
 	private void renderText(Graphics2D context, IRenderedRow row) {
@@ -236,14 +240,8 @@ public class XYChart {
 			if (text != null) {
 				paintRowBackground(context, row.getHeight());
 				context.setColor(Color.BLACK);
-				int y;
-				if (height > 40) {
-					context.drawLine(-xOffset, height - 1, -15, height - 1);
-					y = height - context.getFontMetrics().getHeight() / 2;
-				} else {
-					// draw the string in the middle of the row
-					y = ((height - context.getFontMetrics().getHeight()) / 2) + context.getFontMetrics().getAscent();
-				}
+				context.drawLine(-xOffset, height - 1, -15, height - 1);
+				int y = ((height - context.getFontMetrics().getHeight()) / 2) + context.getFontMetrics().getAscent();
 				int charsWidth = context.getFontMetrics().charsWidth(text.toCharArray(), 0, text.length());
 				if (charsWidth > xOffset) {
 					float fitRatio = ((float) xOffset) / (charsWidth
