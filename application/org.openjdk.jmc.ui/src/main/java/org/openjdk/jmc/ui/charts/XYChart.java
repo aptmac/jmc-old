@@ -197,7 +197,6 @@ public class XYChart {
 		rendererResult = rendererRoot.render(context, xBucketRange, axisHeight);
 		AffineTransform oldTransform = context.getTransform();
 
-		rowColorCounter = 0;
 		context.setTransform(oldTransform);
 		if (!selectedRows.isEmpty()) {
 			renderSelectionChart(context, rendererResult);
@@ -218,10 +217,6 @@ public class XYChart {
 			renderSelectionText(context, rendererResult);
 			context.setTransform(oldTransform);
 		}
-		// .. and finally a semitransparent axis line again.
-		context.setPaint(new Color(0, 0, 0, 64));
-		context.drawLine(0, axisHeight - 1, axisWidth - 1, axisHeight - 1);
-		renderRangeIndication(context, axisHeight + 25);
 	}
 
 	private void renderSelectionText(Graphics2D context, IRenderedRow row) {
@@ -282,7 +277,7 @@ public class XYChart {
 				context.drawLine(0, height - 1, axisWidth -15, height - 1);
 				int y = ((height - context.getFontMetrics().getHeight()) / 2) + context.getFontMetrics().getAscent();
 				int charsWidth = context.getFontMetrics().charsWidth(text.toCharArray(), 0, text.length());
-				if (charsWidth > xOffset) {
+				if (xOffset > 0 && charsWidth > xOffset) {
 					float fitRatio = ((float) xOffset) / (charsWidth
 							+ context.getFontMetrics().charsWidth(ELLIPSIS.toCharArray(), 0, ELLIPSIS.length()));
 					text = text.substring(0, ((int) (text.length() * fitRatio)) - 1) + ELLIPSIS;

@@ -92,7 +92,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 	private static final String TABLE = "table"; //$NON-NLS-1$
 	private static final String CHART = "chart"; //$NON-NLS-1$
 	private static final String SELECTED = "selected"; //$NON-NLS-1$
-	private static final int X_OFFSET = 180;
+	private static final int X_OFFSET = 0;
 	private final IItemFilter pageFilter;
 	protected final StreamModel model;
 	protected CheckboxTableViewer chartLegend;
@@ -176,6 +176,8 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		Composite chartAndTextContainer = toolkit.createComposite(chartAndTimelineContainer);
 		gridLayout = new GridLayout(2, false);
 		gridLayout.horizontalSpacing = 0;
+		gridLayout.marginWidth = 0;
+		gridLayout.marginHeight = 0;
 		chartAndTextContainer.setLayout(gridLayout);
 		chartAndTextContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
@@ -204,7 +206,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		scText.setExpandHorizontal(true);
 		scText.setExpandVertical(true);
 
-		timelineCanvas = new TimelineCanvas(chartAndTimelineContainer, X_OFFSET);
+		timelineCanvas = new TimelineCanvas(chartAndTimelineContainer, 180);
 		GridData gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
 		gridData.heightHint = 40; // TODO: replace with constant
 		timelineCanvas.setLayoutData(gridData);
@@ -222,7 +224,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		PersistableSashForm.loadState(sash, state.getChild(SASH));
 		DataPageToolkit.createChartTimestampTooltip(chartCanvas);
 
-		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), 180, timelineCanvas);
+		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), X_OFFSET, timelineCanvas);
 		DataPageToolkit.setChart(chartCanvas, chart, pageContainer::showSelection);
 		DataPageToolkit.setChart(textCanvas, chart, pageContainer::showSelection);
 		SelectionStoreActionToolkit.addSelectionStoreRangeActions(pageContainer.getSelectionStore(), chart,

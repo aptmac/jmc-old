@@ -32,7 +32,6 @@
  */
 package org.openjdk.jmc.ui.misc;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -46,8 +45,6 @@ import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
-import org.eclipse.swt.events.FocusEvent;
-import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.MouseAdapter;
@@ -61,10 +58,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
 import org.openjdk.jmc.common.IDisplayable;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.ui.UIPlugin;
@@ -74,13 +68,14 @@ import org.openjdk.jmc.ui.charts.IXDataRenderer;
 import org.openjdk.jmc.ui.charts.XYChart;
 import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.common.util.Environment;
-import org.openjdk.jmc.ui.common.util.Environment.OSType;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
+import org.openjdk.jmc.ui.misc.ChartCanvas.KeyNavigator;
 
 public class ChartTextCanvas extends Canvas {
 	private static int MIN_LANE_HEIGHT = 50;
 	private int lastMouseX = -1;
 	private int lastMouseY = -1;
+	private int numItems = 0;
 	private List<Rectangle2D> highlightRects;
 	private Object hoveredItemData;
 
@@ -93,6 +88,7 @@ public class ChartTextCanvas extends Canvas {
 		Point lastSelection;
 		boolean selectionIsClick = false;
 		Set<Point> highlightPoints;
+
 
 		@Override
 		public void mouseDown(MouseEvent e) {
@@ -214,7 +210,6 @@ public class ChartTextCanvas extends Canvas {
 		}
 	}
 
-	private int numItems = 0;
 	public void setNumItems(int numItems) {
 		this.numItems = numItems;
 	}
@@ -251,94 +246,24 @@ public class ChartTextCanvas extends Canvas {
 			awtCanvas.paint(e, 0, 0);
 			// Crude, flickering highlight of areas also delivered to tooltips.
 			// FIXME: Remove flicker by drawing in a buffered stage (AWT or SWT).
-			List<Rectangle2D> rs = highlightRects;
-			if (rs != null) {
-				GC gc = e.gc;
-				gc.setForeground(getForeground());
-				for (Rectangle2D r : rs) {
-					int x = (int) (((int) r.getX()) * xScale);
-					int y = (int) (((int) r.getY()) * yScale);
-					if ((r.getWidth() == 0) && (r.getHeight() == 0)) {
-						int width = (int) Math.round(4 * xScale);
-						int height = (int) Math.round(4 * yScale);
-						gc.drawOval(x - (int) Math.round(2 * xScale), y - (int) Math.round(2 * yScale), width, height);
-					} else {
-						int width = (int) Math.round(r.getWidth() * xScale);
-						int height = (int) Math.round(r.getHeight() * yScale);
-						gc.drawRectangle(x, y, width, height);
-					}
-				}
-			}
-		}
-	}
-
-	class Zoomer implements Listener {
-
-		@Override
-		public void handleEvent(Event event) {
-			handleWheelEvent(event.stateMask, event.x, event.count);
-		}
-
-	}
-
-	/**
-	 * Steals the wheel events from the currently focused control while hovering over this
-	 * (ChartCanvas) control. Used on Windows to allow zooming without having to click in the chart
-	 * first as click causes a selection.
-	 */
-	class WheelStealingZoomer implements Listener, MouseTrackListener, FocusListener {
-
-		private Control stealWheelFrom;
-
-		@Override
-		public void handleEvent(Event event) {
-			if (isDisposed()) {
-				stop();
-			} else if (stealWheelFrom != null && !stealWheelFrom.isDisposed()) {
-				Point canvasSize = getSize();
-				Point canvasPoint = toControl(stealWheelFrom.toDisplay(event.x, event.y));
-				if (canvasPoint.x >= 0 && canvasPoint.y >= 0 && canvasPoint.x < canvasSize.x
-						&& canvasPoint.y < canvasSize.y) {
-					handleWheelEvent(event.stateMask, canvasPoint.x, event.count);
-					event.doit = false;
-				}
-			}
-		}
-
-		private void stop() {
-			if (stealWheelFrom != null && !stealWheelFrom.isDisposed()) {
-				stealWheelFrom.removeListener(SWT.MouseVerticalWheel, this);
-				stealWheelFrom.removeFocusListener(this);
-				stealWheelFrom = null;
-			}
-		}
-
-		@Override
-		public void mouseEnter(MouseEvent e) {
-			stop();
-			Control stealWheelFrom = getDisplay().getFocusControl();
-			if (stealWheelFrom != null && stealWheelFrom != ChartTextCanvas.this) {
-				stealWheelFrom.addListener(SWT.MouseVerticalWheel, this);
-				stealWheelFrom.addFocusListener(this);
-				this.stealWheelFrom = stealWheelFrom;
-			}
-		}
-
-		@Override
-		public void mouseExit(MouseEvent e) {
-		}
-
-		@Override
-		public void mouseHover(MouseEvent e) {
-		};
-
-		@Override
-		public void focusGained(FocusEvent e) {
-		}
-
-		@Override
-		public void focusLost(FocusEvent e) {
-			stop();
+//			List<Rectangle2D> rs = highlightRects;
+//			if (rs != null) {
+//				GC gc = e.gc;
+//				gc.setForeground(getForeground());
+//				for (Rectangle2D r : rs) {
+//					int x = (int) (((int) r.getX()) * xScale);
+//					int y = (int) (((int) r.getY()) * yScale);
+//					if ((r.getWidth() == 0) && (r.getHeight() == 0)) {
+//						int width = (int) Math.round(4 * xScale);
+//						int height = (int) Math.round(4 * yScale);
+//						gc.drawOval(x - (int) Math.round(2 * xScale), y - (int) Math.round(2 * yScale), width, height);
+//					} else {
+//						int width = (int) Math.round(r.getWidth() * xScale);
+//						int height = (int) Math.round(r.getHeight() * yScale);
+////						gc.drawRectangle(x, y, width, height);
+//					}
+//				}
+//			}
 		}
 	}
 
@@ -347,25 +272,14 @@ public class ChartTextCanvas extends Canvas {
 		@Override
 		public void keyPressed(KeyEvent event) {
 			switch (event.character) {
-			case '+':
-				zoom(1);
-				break;
-			case '-':
-				zoom(-1);
-				break;
 			default:
 				switch (event.keyCode) {
-				case SWT.ARROW_RIGHT:
-					pan(10);
-					break;
-				case SWT.ARROW_LEFT:
-					pan(-10);
-					break;
-				case SWT.ARROW_UP:
-					zoom(1);
-					break;
-				case SWT.ARROW_DOWN:
-					zoom(-1);
+				case SWT.ESC:
+					awtChart.clearSelection();
+					if (selectionListener != null) {
+						selectionListener.run();
+					}
+					redrawChart();
 					break;
 				default:
 					// Ignore
@@ -412,16 +326,11 @@ public class ChartTextCanvas extends Canvas {
 		Selector selector = new Selector();
 		addMouseListener(selector);
 		addMouseMoveListener(selector);
-//		addMouseTrackListener(selector);
 		FocusTracker.enableFocusTracking(this);
-//		addListener(SWT.MouseVerticalWheel, new Zoomer());
 		addKeyListener(new KeyNavigator());
 		aaListener = new AntiAliasingListener();
 		UIPlugin.getDefault().getPreferenceStore().addPropertyChangeListener(aaListener);
 		addDisposeListener(e -> UIPlugin.getDefault().getPreferenceStore().removePropertyChangeListener(aaListener));
-		if (Environment.getOSType() == OSType.WINDOWS) {
-			addMouseTrackListener(new WheelStealingZoomer());
-		}
 		if (getParent() instanceof ScrolledComposite) {
 			((ScrolledComposite) getParent()).getVerticalBar()
 				.addListener(SWT.Selection, e -> vBarScroll());
@@ -464,17 +373,6 @@ public class ChartTextCanvas extends Canvas {
 		return new Point(xImage, yImage);
 	}
 
-	/**
-	 * Translates a display x coordinate into an image x coordinate for the chart.
-	 *
-	 * @param x
-	 *            the provided display x coordinate
-	 * @return the x coordinate in the chart's coordinate space
-	 */
-	private int translateDisplayToImageXCoordinates(int x) {
-		return (int) Math.round(x / xScale);
-	}
-
 	public Object getHoveredItemData() {
 		return this.hoveredItemData;
 	}
@@ -508,7 +406,7 @@ public class ChartTextCanvas extends Canvas {
 
 			@Override
 			public void visit(ISpan span) {
-				newRects.add(span.getTarget());
+//				newRects.add(span.getTarget()); // stop
 			}
 
 			@Override
@@ -549,33 +447,6 @@ public class ChartTextCanvas extends Canvas {
 		}
 	}
 
-	private void handleWheelEvent(int stateMask, int x, int count) {
-		// SWT.MOD1 is CMD on OS X and CTRL elsewhere.
-		if ((stateMask & SWT.MOD1) != 0) {
-			pan(count * 3);
-		} else {
-			zoom(translateDisplayToImageXCoordinates(x), count);
-		}
-	}
-
-	private void pan(int rightPercent) {
-		if ((awtChart != null) && awtChart.pan(rightPercent)) {
-			redrawChartText();
-		}
-	}
-
-	private void zoom(int zoomInSteps) {
-		if ((awtChart != null) && awtChart.zoom(zoomInSteps)) {
-			redrawChartText();
-		}
-	}
-
-	private void zoom(int x, int zoomInSteps) {
-		if ((awtChart != null) && awtChart.zoom(x, zoomInSteps)) {
-			redrawChartText();
-		}
-	}
-
 	public void select(int x1, int x2, int y1, int y2, boolean clear) {
 		if ((awtChart != null) && awtChart.select(x1, x2, y1, y2, clear)) {
 			redrawChartText();
@@ -590,20 +461,20 @@ public class ChartTextCanvas extends Canvas {
 			infoAt(new IChartInfoVisitor.Adapter() {
 				@Override
 				public void visit(IBucket bucket) {
-					if (range[0] == null) {
-						range[0] = (IQuantity) bucket.getStartX();
-						range[1] = (IQuantity) bucket.getEndX();
-					}
+//					if (range[0] == null) {
+//						range[0] = (IQuantity) bucket.getStartX();
+//						range[1] = (IQuantity) bucket.getEndX();
+//					}
 				}
 
 				@Override
 				public void visit(ISpan span) {
-					if (range[0] == null) {
-						IDisplayable x0 = span.getStartX();
-						IDisplayable x1 = span.getEndX();
-						range[0] = (x0 instanceof IQuantity) ? (IQuantity) x0 : null;
-						range[1] = (x1 instanceof IQuantity) ? (IQuantity) x1 : null;
-					}
+//					if (range[0] == null) {
+//						IDisplayable x0 = span.getStartX();
+//						IDisplayable x1 = span.getEndX();
+//						range[0] = (x0 instanceof IQuantity) ? (IQuantity) x0 : null;
+//						range[1] = (x1 instanceof IQuantity) ? (IQuantity) x1 : null;
+//					}
 				}
 			}, x, y);
 			if ((range[0] != null) || (range[1] != null)) {
@@ -669,7 +540,7 @@ public class ChartTextCanvas extends Canvas {
 	}
 
 	private void redrawChart() {
-		if ( chartCanvas != null) {
+		if (chartCanvas != null) {
 			chartCanvas.redrawChart();
 		}
 	}
