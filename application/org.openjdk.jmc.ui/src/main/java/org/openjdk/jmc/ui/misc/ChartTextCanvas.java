@@ -175,7 +175,7 @@ public class ChartTextCanvas extends Canvas {
 				selectionIsClick = false;
 			}
 			if (!selectionIsClick) {
-				select((int) (selectionStartX / xScale), (int) (x / xScale), (int) (selectionStartY / yScale),
+				select((int) (selectionStartX / xScale), (int) (selectionStartX / xScale), (int) (selectionStartY / yScale),
 						(int) (y / yScale), true);
 			}
 		}
