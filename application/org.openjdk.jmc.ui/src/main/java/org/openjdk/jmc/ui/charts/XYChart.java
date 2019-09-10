@@ -144,17 +144,24 @@ public class XYChart {
 				? QuantityRange.createWithEnd(selectionStart, selectionEnd) : null;
 	}
 
-	public void render(Graphics2D context, int width, int height) {
+	public void renderChart(Graphics2D context, int width, int height) {
 		if (width > xOffset && height > Y_OFFSET) {
-			axisWidth = width - xOffset;
+			axisWidth = width;
 			// FIXME: xBucketRange and xTickRange should be more related, so that each tick is typically an integer number of buckets (or possibly 2.5 buckets).
 			xBucketRange = new SubdividedQuantityRange(currentStart, currentEnd, axisWidth, bucketWidth);
 			// FIXME: Use bucketWidth * ticksPerBucket instead of hardcoded value?
 			xTickRange = new SubdividedQuantityRange(currentStart, currentEnd, axisWidth, 100);
 			AffineTransform oldTransform = context.getTransform();
-			context.translate(xOffset, 0);
-//			doRender(context, height - Y_OFFSET);
-			doRender(context, height); // no need for offset because timeline is rendered elsewhere
+			doRenderChart(context, height);
+			context.setTransform(oldTransform);
+		}
+	}
+
+	public void renderText(Graphics2D context, int width, int height) {
+		if (width >= xOffset && height > Y_OFFSET) {
+			axisWidth = width;
+			AffineTransform oldTransform = context.getTransform();
+			doRenderText(context, height);
 			context.setTransform(oldTransform);
 		}
 	}
@@ -175,7 +182,7 @@ public class XYChart {
 		}
 	}
 
-	private void doRender(Graphics2D context, int axisHeight) {
+	private void doRenderChart(Graphics2D context, int axisHeight) {
 		rowColorCounter = 0;
 		context.setPaint(Color.LIGHT_GRAY);
 		AWTChartToolkit.drawGrid(context, xTickRange, axisHeight, false);
@@ -189,10 +196,11 @@ public class XYChart {
 		// ... then the graph ...
 		rendererResult = rendererRoot.render(context, xBucketRange, axisHeight);
 		AffineTransform oldTransform = context.getTransform();
-		renderText(context, rendererResult);
+
+		rowColorCounter = 0;
 		context.setTransform(oldTransform);
 		if (!selectedRows.isEmpty()) {
-			renderSelection(context, rendererResult);
+			renderSelectionChart(context, rendererResult);
 			context.setTransform(oldTransform);
 		}
 		// .. and finally a semitransparent axis line again.
@@ -201,19 +209,50 @@ public class XYChart {
 		renderRangeIndication(context, axisHeight + 25);
 	}
 
-	private void renderSelection(Graphics2D context, IRenderedRow row) {
+	private void doRenderText(Graphics2D context, int axisHeight) {
+		AffineTransform oldTransform = context.getTransform();
+		rowColorCounter = 0;
+		renderText(context, rendererResult);
+		context.setTransform(oldTransform);
+		if (!selectedRows.isEmpty()) {
+			renderSelectionText(context, rendererResult);
+			context.setTransform(oldTransform);
+		}
+		// .. and finally a semitransparent axis line again.
+		context.setPaint(new Color(0, 0, 0, 64));
+		context.drawLine(0, axisHeight - 1, axisWidth - 1, axisHeight - 1);
+		renderRangeIndication(context, axisHeight + 25);
+	}
+
+	private void renderSelectionText(Graphics2D context, IRenderedRow row) {
 		if (selectedRows.contains(row.getPayload())) {
 			Color highlight = new Color(0, 206, 209, 20);
-			renderSelection(context, xBucketRange, row.getHeight());
 			context.setColor(highlight);
-			context.fillRect(-180, 0, 180, row.getHeight());
+			context.fillRect(0, 0, axisWidth, row.getHeight());
 		} else {
 			List<IRenderedRow> subdivision = row.getNestedRows();
 			if (subdivision.isEmpty()) {
 				dimRect(context, 0, axisWidth, row.getHeight(), true);
 			} else {
 				for (IRenderedRow nestedRow : row.getNestedRows()) {
-					renderSelection(context, nestedRow);
+					renderSelectionText(context, nestedRow);
+				}
+				return;
+			}
+		}
+		context.translate(0, row.getHeight());
+	}
+
+	private void renderSelectionChart(Graphics2D context, IRenderedRow row) {
+		if (selectedRows.contains(row.getPayload())) {
+			renderSelection(context, xBucketRange, row.getHeight());
+		} else {
+			List<IRenderedRow> subdivision = row.getNestedRows();
+			if (subdivision.isEmpty()) {
+				dimRect(context, 0, axisWidth, row.getHeight(), true);
+			} else {
+				for (IRenderedRow nestedRow : row.getNestedRows()) {
+					renderSelectionChart(context, nestedRow);
 				}
 				return;
 			}
@@ -229,7 +268,7 @@ public class XYChart {
        } else {
            context.setColor(Palette.PF_BLACK_200.getAWTColor());
        }
-       context.fillRect(-xOffset, 0, 180, height);
+       context.fillRect(0, 0, axisWidth, height);
        rowColorCounter++;
    }
 
@@ -240,7 +279,7 @@ public class XYChart {
 			if (text != null) {
 				paintRowBackground(context, row.getHeight());
 				context.setColor(Color.BLACK);
-				context.drawLine(-xOffset, height - 1, -15, height - 1);
+				context.drawLine(0, height - 1, axisWidth -15, height - 1);
 				int y = ((height - context.getFontMetrics().getHeight()) / 2) + context.getFontMetrics().getAscent();
 				int charsWidth = context.getFontMetrics().charsWidth(text.toCharArray(), 0, text.length());
 				if (charsWidth > xOffset) {
@@ -248,7 +287,7 @@ public class XYChart {
 							+ context.getFontMetrics().charsWidth(ELLIPSIS.toCharArray(), 0, ELLIPSIS.length()));
 					text = text.substring(0, ((int) (text.length() * fitRatio)) - 1) + ELLIPSIS;
 				}
-				context.drawString(text, -xOffset + 2, y);
+				context.drawString(text, 2, y);
 			} else {
 				List<IRenderedRow> subdivision = row.getNestedRows();
 				if (!subdivision.isEmpty()) {
@@ -472,7 +511,7 @@ public class XYChart {
 	private static void dimRect(Graphics2D context, int from, int width, int height, boolean isDimWholeLane) {
 		context.setColor(SELECTION_COLOR);
 		if (isDimWholeLane) {
-			context.fillRect(from - 180, 0, width + 180, height);
+			context.fillRect(from , 0, width, height);
 		} else {
 			context.fillRect(from, 0, width, height);
 		}
