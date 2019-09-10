@@ -49,6 +49,7 @@ import java.util.stream.Stream;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -104,6 +105,7 @@ import org.openjdk.jmc.ui.column.ColumnMenusFactory;
 import org.openjdk.jmc.ui.column.TableSettings;
 import org.openjdk.jmc.ui.handlers.ActionToolkit;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
+import org.openjdk.jmc.ui.wizards.IPerformFinishable;
 import org.openjdk.jmc.ui.wizards.OnePageWizardDialog;
 
 public class ThreadsPage extends AbstractDataPage {
@@ -416,7 +418,7 @@ public class ThreadsPage extends AbstractDataPage {
 			OnePageWizardDialog.openAndHideCancelButton(tablePopup, 500, 600);
 		}
 
-		private class TablePopup extends WizardPage {
+		private class TablePopup extends WizardPage implements IPerformFinishable {
 
 			private IState state;
 
@@ -447,15 +449,28 @@ public class ThreadsPage extends AbstractDataPage {
 				tableFilterComponent.loadState(state.getChild(THREADS_TABLE_FILTER));
 				onFilterChange(tableFilter);
 
+				if (selectionInput != null) {
+					table.getManager().getViewer().setSelection(new StructuredSelection(selectionInput));
+				}
+
 				setControl(parent);
 			}
 
 			private void onFilterChangeHelper(IItemFilter filter) {
 				onFilterChange(filter);
 			}
+
+			@Override
+			public boolean performFinish() {
+				IItemCollection lastSelection = table.getSelection().getItems();
+				table.show(lastSelection);
+				selectionInput = (Object[]) table.getManager().getViewer().getInput();
+				return true;
+			}
 		}
 	}
 
+	private Object[] selectionInput;
 	private FlavorSelectorState flavorSelectorState;
 	private SelectionState histogramSelectionState;
 	private IItemFilter tableFilter;
