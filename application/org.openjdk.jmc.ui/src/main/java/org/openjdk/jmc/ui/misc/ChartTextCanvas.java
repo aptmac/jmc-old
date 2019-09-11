@@ -280,6 +280,7 @@ public class ChartTextCanvas extends Canvas {
 						selectionListener.run();
 					}
 					redrawChart();
+					redrawChartText();
 					break;
 				default:
 					// Ignore

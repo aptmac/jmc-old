@@ -352,6 +352,7 @@ public class ChartCanvas extends Canvas {
 						selectionListener.run();
 					}
 					redrawChart();
+					redrawChartText();
 					break;
 				case SWT.ARROW_RIGHT:
 					pan(10);
