@@ -400,10 +400,10 @@ public class XYChart {
 	}
 
 	public boolean select(int x1, int x2, int y1, int y2, boolean clear) {
-		int xStart = Math.min(x1, x2) - xOffset;
-		int xEnd = Math.max(x1, x2) - xOffset;
+		int xStart = Math.min(x1, x2);
+		int xEnd = Math.max(x1, x2);
 
-		if (xBucketRange != null && (xEnd >= 0)) {
+		if (xBucketRange != null && (xEnd != xStart)) {
 			return select(xBucketRange.getQuantityAtPixel(Math.max(0, xStart)), xBucketRange.getQuantityAtPixel(xEnd),
 					y1, y2, clear);
 		} else {
