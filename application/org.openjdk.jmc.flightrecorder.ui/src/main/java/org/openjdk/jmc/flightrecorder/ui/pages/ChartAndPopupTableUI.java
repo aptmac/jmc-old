@@ -64,8 +64,6 @@ import org.openjdk.jmc.flightrecorder.JfrAttributes;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
 import org.openjdk.jmc.flightrecorder.ui.IPageUI;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
-import org.openjdk.jmc.flightrecorder.ui.common.ChartDisplayControlBar;
-import org.openjdk.jmc.flightrecorder.ui.common.ChartFilterControlBar;
 import org.openjdk.jmc.flightrecorder.ui.common.DataPageToolkit;
 import org.openjdk.jmc.flightrecorder.ui.common.FilterComponent;
 import org.openjdk.jmc.flightrecorder.ui.common.FlavorSelector;
@@ -75,6 +73,8 @@ import org.openjdk.jmc.flightrecorder.ui.common.ScrolledCompositeToolkit;
 import org.openjdk.jmc.flightrecorder.ui.common.ItemHistogram.HistogramSelection;
 import org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages;
 import org.openjdk.jmc.flightrecorder.ui.selection.SelectionStoreActionToolkit;
+import org.openjdk.jmc.ui.charts.ChartDisplayControlBar;
+import org.openjdk.jmc.ui.charts.ChartFilterControlBar;
 import org.openjdk.jmc.ui.charts.IXDataRenderer;
 import org.openjdk.jmc.ui.charts.RendererToolkit;
 import org.openjdk.jmc.ui.charts.TimelineCanvas;
@@ -114,7 +114,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 
 	private TimelineCanvas timelineCanvas;
 	protected Composite controls;
-	public ChartFilterControlBar ctf;
+	public ChartFilterControlBar filterBar;
 	private ChartDisplayControlBar cdcb;
 
 	ChartAndPopupTableUI(IItemFilter pageFilter, StreamModel model, Composite parent, FormToolkit toolkit,
@@ -139,25 +139,38 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 				pageContainer.getSelectionStore()::getSelections, this::onFilterChange);
 		
 		chartContainer = toolkit.createComposite(sash);
-		chartContainer.setLayout(new GridLayout(1, false));
+		GridLayout gridLayout = new GridLayout(1, true);
+		gridLayout.marginWidth = 0;
+		gridLayout.marginHeight = 0;
+		chartContainer.setLayout(gridLayout);
 		chartContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-		// Container to hold the filter controls
-		controls = new Composite(chartContainer, SWT.NO_BACKGROUND);
-		controls.setLayout(new GridLayout(1, false));
-		controls.setBackground(Palette.PF_BLACK_300.getSWTColor());
-		controls.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		/**
+		 * Chart Container (1 column gridlayout) - Contains filter bar & graph container
+		 * Graph Container (2 column gridlayout) - Contains chart and timeline container & display bar
+		 * Chart and Timeline Container (1 column gridlayout) Contains chart and text container and timeline canvas
+		 * Chart and Text Container (2 column gridlayout) - Contains scText and textCanvas) & scChart (and chart canvas)
+		 */
+		// Filter Controls
+		Listener filterListener = new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				onSetRange(true);
+			}
+		};
 		Listener resetListener = new Listener() {
 			@Override
 			public void handleEvent(Event event) {
 				onSetRange(false);
 			}
 		};
-		ctf = new ChartFilterControlBar(controls, resetListener);
+		filterBar = new ChartFilterControlBar(chartContainer, filterListener, resetListener, pageContainer.getRecordingRange());
+		filterBar.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
+		filterBar.setBackground(Palette.PF_BLACK_300.getSWTColor());
 
 		// Container to hold the chart (& timeline) and display toolbar
 		Composite graphContainer = toolkit.createComposite(chartContainer);
-		GridLayout gridLayout = new GridLayout(2, false);
+		gridLayout = new GridLayout(2, false);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
 		graphContainer.setLayout(gridLayout);
@@ -187,7 +200,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		scTextGd.widthHint = 180;
 		scText.setLayoutData(scTextGd);
 		textCanvas = new ChartTextCanvas(scText);
-		textCanvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		textCanvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
 
 		ScrolledComposite scChart = sct.createScrolledComposite(chartAndTextContainer);
 		scChart.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -224,7 +237,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		PersistableSashForm.loadState(sash, state.getChild(SASH));
 		DataPageToolkit.createChartTimestampTooltip(chartCanvas);
 
-		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), X_OFFSET, timelineCanvas);
+		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), X_OFFSET, timelineCanvas, filterBar);
 		DataPageToolkit.setChart(chartCanvas, chart, pageContainer::showSelection);
 		DataPageToolkit.setChart(textCanvas, chart, pageContainer::showSelection);
 		SelectionStoreActionToolkit.addSelectionStoreRangeActions(pageContainer.getSelectionStore(), chart,
@@ -277,6 +290,10 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		chart.setVisibleRange(range.getStart(), range.getEnd());
 		cdcb.resetZoomScale();
 		buildChart();
+	}
+
+	public void setTimeRange(IRange<IQuantity> range) {
+		this.timeRange = range;
 	}
 
 	private void onFlavorSelected(IItemCollection items, IRange<IQuantity> timeRange) {

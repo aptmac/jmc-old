@@ -24,7 +24,7 @@ public class TimelineCanvas extends Canvas {
 
 	public TimelineCanvas(Composite parent, int xOffset) {
 		super (parent, SWT.NONE);
-		this.xOffset = xOffset;
+		this.xOffset = xOffset + 9;
 		awtCanvas = new AwtCanvas();
 		addPaintListener(new TimelineCanvasPainter());
 	}

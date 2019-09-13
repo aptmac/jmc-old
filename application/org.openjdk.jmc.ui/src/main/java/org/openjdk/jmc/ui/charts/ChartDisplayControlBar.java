@@ -1,4 +1,4 @@
-package org.openjdk.jmc.flightrecorder.ui.common;
+package org.openjdk.jmc.ui.charts;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -11,7 +11,6 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Scale;
 import org.eclipse.swt.widgets.Text;
 import org.openjdk.jmc.ui.UIPlugin;
-import org.openjdk.jmc.ui.charts.XYChart;
 import org.openjdk.jmc.ui.misc.ChartCanvas;
 
 public class ChartDisplayControlBar extends Composite {

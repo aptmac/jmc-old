@@ -139,6 +139,7 @@ import org.openjdk.jmc.flightrecorder.ui.selection.IFilterFlavor;
 import org.openjdk.jmc.flightrecorder.ui.selection.SelectionStore.SelectionStoreEntry;
 import org.openjdk.jmc.flightrecorder.ui.selection.SelectionStoreActionToolkit;
 import org.openjdk.jmc.ui.charts.AWTChartToolkit.IColorProvider;
+import org.openjdk.jmc.ui.charts.ChartFilterControlBar;
 import org.openjdk.jmc.ui.charts.IQuantitySeries;
 import org.openjdk.jmc.ui.charts.ISpanSeries;
 import org.openjdk.jmc.ui.charts.IXDataRenderer;
