@@ -55,7 +55,7 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.layout.RowData;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.forms.widgets.FormToolkit;
@@ -209,17 +209,18 @@ public class ThreadsPage extends AbstractDataPage {
 			chart.setVisibleRange(visibleRange.getStart(), visibleRange.getEnd());
 			onFilterChange(tableFilter);
 
-			Button button = new Button(ctf, SWT.PUSH | SWT.ARROW);
-			button.setText("Thread State Selection");
-			button.setLayoutData(new RowData(SWT.DEFAULT, 20));
-			button.addSelectionListener(new SelectionAdapter() {
+			filterBar.setThreadLaneActivityListener(new SelectionListener() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
 					lanes.openEditLanesDialog(mm, false);
 				}
-			});
-			controls.pack();
 
+				@Override
+				public void widgetDefaultSelected(SelectionEvent e) {
+				}
+			});
+			filterBar.setChart(chart);
+			filterBar.setChartCanvas(chartCanvas);
 //			Composite embed = new Composite(controls, SWT.EMBEDDED);
 //			embed.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 //			Frame frame = SWT_AWT.new_Frame(embed);

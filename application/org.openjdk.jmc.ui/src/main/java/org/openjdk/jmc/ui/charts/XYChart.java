@@ -79,7 +79,7 @@ public class XYChart {
 	private SubdividedQuantityRange xBucketRange;
 	private SubdividedQuantityRange xTickRange;
 	private TimelineCanvas timelineCanvas;
-
+	private ChartFilterControlBar filterBar;
 
 	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot) {
 		this(range.getStart(), range.getEnd(), rendererRoot);
@@ -89,9 +89,11 @@ public class XYChart {
 		this(range.getStart(), range.getEnd(), rendererRoot, xOffset);
 	}
 
-	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, TimelineCanvas timelineCanvas) {
+	// JFR Threads Page
+	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, TimelineCanvas timelineCanvas, ChartFilterControlBar filterBar) {
 		this(range.getStart(), range.getEnd(), rendererRoot, xOffset);
 		this.timelineCanvas = timelineCanvas;
+		this.filterBar = filterBar;
 	}
 	
 	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, int bucketWidth) {
@@ -317,6 +319,10 @@ public class XYChart {
 				currentEnd = QuantitiesToolkit
 						.min(xBucketRange.getQuantityAtPixel(xBucketRange.getPixel(currentStart) + axisWidth), end);
 			}
+			if (filterBar != null) {
+				filterBar.setStartTime(currentStart);
+				filterBar.setEndTime(currentEnd);
+			}
 			return (currentStart.compareTo(oldStart) != 0) || (currentEnd.compareTo(oldEnd) != 0);
 		}
 		// Return true since a redraw forces creation of xBucketRange.
@@ -344,24 +350,41 @@ public class XYChart {
 		return zoomXAxis(x - xOffset, zoomInSteps);
 	}
 
-	private int currentZoom = 0;
-	
+//	private int currentZoom = 0;
+//	private boolean zoomXAxis(int x, int zoomInSteps) {
+//		if (xBucketRange == null) {
+//			// Return true since a redraw forces creation of xBucketRange.
+//			return true;
+//		}
+//		if ((x > 0) && (x < axisWidth)) {
+//			currentZoom += zoomInSteps;
+//			double t = (Math.floor(currentZoom/10.0));
+//			if (t == 0 ) { t++; }
+//			int newStart = (int) (ZOOM_FACTOR * currentZoom * axisWidth);
+//			int newEnd = axisWidth - newStart;
+//			if (xAxis == null) {
+//				xAxis = new SubdividedQuantityRange(start, end, axisWidth, 1);
+//			}
+//			setVisibleRange(xAxis.getQuantityAtPixel(newStart), xAxis.getQuantityAtPixel(newEnd));
+//			return true;
+//		}
+//		return false;
+//	}
 	private boolean zoomXAxis(int x, int zoomInSteps) {
 		if (xBucketRange == null) {
 			// Return true since a redraw forces creation of xBucketRange.
 			return true;
 		}
 		if ((x > 0) && (x < axisWidth)) {
-			currentZoom += zoomInSteps;
-			double t = (Math.floor(currentZoom/10.0));
-			if (t == 0 ) { t++; }
-			int newStart = (int) (ZOOM_FACTOR * currentZoom * axisWidth);
-			int newEnd = axisWidth - newStart;
-			if (xAxis == null) {
-				xAxis = new SubdividedQuantityRange(start, end, axisWidth, 1);
-			}
+			IQuantity oldStart = currentStart;
+			IQuantity oldEnd = currentEnd;
+			// Absolute value of zoomFactor must be less than 1. Currently it ranges between -0.5 and 0.5.
+			double zoomFactor = Math.atan(zoomInSteps) / Math.PI;
+			int newStart = (int) (zoomFactor * x);
+			int newEnd = (int) (axisWidth * (1 - zoomFactor)) + newStart;
+			SubdividedQuantityRange xAxis = new SubdividedQuantityRange(currentStart, currentEnd, axisWidth, 1);
 			setVisibleRange(xAxis.getQuantityAtPixel(newStart), xAxis.getQuantityAtPixel(newEnd));
-			return true;
+			return (currentStart.compareTo(oldStart) != 0) || (currentEnd.compareTo(oldEnd) != 0);
 		}
 		return false;
 	}
@@ -378,6 +401,10 @@ public class XYChart {
 				// Ensures that zoom out is always allowed
 				currentStart = QuantitiesToolkit.min(rangeStart, currentStart);
 				currentEnd = QuantitiesToolkit.max(rangeEnd, currentEnd);
+			}
+			if (filterBar != null) {
+				filterBar.setStartTime(currentStart);
+				filterBar.setEndTime(currentEnd);
 			}
 			rangeListeners.stream().forEach(l -> l.accept(getVisibleRange()));
 		}
