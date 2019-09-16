@@ -45,7 +45,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -98,16 +97,18 @@ public class ThreadGraphLanes {
 	private List<IAction> actions;
 	private String tooltipTitle;
 	private EventTypeFolderNode typeTree;
+	private boolean quickFilterExist;
 
 	public ThreadGraphLanes(Supplier<StreamModel> dataSourceSupplier, Runnable buildChart) {
 		this.dataSourceSupplier = dataSourceSupplier;
 		this.buildChart = buildChart;
 		this.actions = new ArrayList<>();
+		this.quickFilterExist = false;
 		this.typeTree = dataSourceSupplier.get().getTypeTree(ItemCollectionToolkit
 				.stream(dataSourceSupplier.get().getItems()).filter(this::typeWithThreadAndDuration));
 	}
 
-	public EventTypeFolderNode getTypeTree() {
+	protected EventTypeFolderNode getTypeTree() {
  		return typeTree;
 	}
 
@@ -130,18 +131,24 @@ public class ThreadGraphLanes {
 		return DataPageToolkit.isTypeWithThreadAndDuration(itemStream.getType());
 	}
 
-	public Set<String> getEnabledLanes() {
-		List<IItemFilter> laneFilters = laneDefs.stream()
-				.filter((Predicate<? super LaneDefinition>) LaneDefinition::isEnabled).map(ld -> ld.getFilter())
-				.collect(Collectors.toList());
-		return ((Types) ItemFilters.or(laneFilters.toArray(new IItemFilter[laneFilters.size()]))).getTypes();
-	}
-	
 	public IItemFilter getEnabledLanesFilter() {
 		List<IItemFilter> laneFilters = laneDefs.stream()
 				.filter((Predicate<? super LaneDefinition>) LaneDefinition::isEnabled).map(ld -> ld.getFilter())
 				.collect(Collectors.toList());
 		return ItemFilters.or(laneFilters.toArray(new IItemFilter[laneFilters.size()]));
+	}
+
+	/**
+	 * Retrieves the set of lane names that are currently enabled.<br>
+	 * Note: The "Rest lane" is of type ItemFilters$Composite, and cannot be cast to Types,
+	 *     so it gets filtered out of the end result.
+	 * @return the enabled lanes independent from the rest lane
+	 */
+	public Set<String> getEnabledLanes() {
+		List<IItemFilter> laneFilters = laneDefs.stream()
+				.filter((Predicate<? super LaneDefinition>) LaneDefinition::isEnabledAndNotRestLane).map(ld -> ld.getFilter())
+				.collect(Collectors.toList());
+		return ((Types) ItemFilters.or(laneFilters.toArray(new IItemFilter[laneFilters.size()]))).getTypes();
 	}
 
 	private void setTooltipTitle(String description) {
@@ -154,6 +161,37 @@ public class ThreadGraphLanes {
 
 	private void resetTooltipTitle() {
 		this.tooltipTitle = null;
+	}
+
+	/**
+	 * Introduces a "Quick Filter" to the lane definitions which is controlled by the
+	 * dropdown lane filter. Initially, the enabled activity lanes will be a copy of
+	 * the currently enabled lanes. When initially used, the "Quick Filter" will be
+	 * the only active lane definition in an attempt to preserve the lane activity of
+	 * the existing lane definitions. The "Quick Filter" is meant for easy viewing of
+	 * activities, and will not be persisted.
+	 */
+	public void useDropdownFilter(LaneDefinition quickFilterDef) {
+		if (quickFilterExist) {
+			for (int i = 0; i < laneDefs.size(); i++) {
+				if (quickFilterDef.getName().equals(laneDefs.get(i).getName())) {
+					laneDefs.remove(laneDefs.get(i));
+					laneDefs.add(i, quickFilterDef);
+				}
+			}
+		} else {
+			for (int i = 0; i < laneDefs.size(); i++) {
+				setLaneDefinitionEnablement(laneDefs.get(i), i, false);
+			}
+			laneDefs.add(0, quickFilterDef);
+			quickFilterExist = true;
+		}
+		buildChart.run();
+	}
+
+	private void setLaneDefinitionEnablement(LaneDefinition oldLd, int laneIndex, boolean isEnabled) {
+		LaneDefinition newLd = new LaneDefinition(oldLd.getName(), isEnabled, oldLd.getFilter(), oldLd.isRestLane());
+		laneDefs.set(laneIndex, newLd);
 	}
 
 	public IXDataRenderer buildThreadRenderer(Object thread, IItemCollection items) {
@@ -285,9 +323,7 @@ public class ThreadGraphLanes {
 
 				@Override
 				public void run() {
-					LaneDefinition newLd = new LaneDefinition(ld.getName(), isChecked(), ld.getFilter(),
-							ld.isRestLane());
-					laneDefs.set(laneIndex, newLd);
+					setLaneDefinitionEnablement(ld, laneIndex, isChecked());
 					buildChart.run();
 				}
 			};
@@ -304,7 +340,7 @@ public class ThreadGraphLanes {
 			actions.add(checkAction);
 		});
 	}
-	
+
 	public List<IAction> getContextMenuActions() {
 		return actions;
 	}

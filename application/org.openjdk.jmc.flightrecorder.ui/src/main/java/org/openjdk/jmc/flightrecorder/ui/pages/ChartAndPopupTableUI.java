@@ -113,7 +113,6 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 	private Composite hiddenTableContainer;
 
 	private TimelineCanvas timelineCanvas;
-	protected Composite controls;
 	public ChartFilterControlBar filterBar;
 	private ChartDisplayControlBar cdcb;
 
