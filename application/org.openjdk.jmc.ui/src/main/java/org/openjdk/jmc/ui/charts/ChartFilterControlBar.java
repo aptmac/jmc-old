@@ -21,7 +21,7 @@ public class ChartFilterControlBar extends Composite {
 	private TimeFilter timeFilter;
 	private Button laneActivityBtn;
 
-	public ChartFilterControlBar(Composite parent, Listener filterListener, Listener resetListener, IRange<IQuantity> recordingRange) {
+	public ChartFilterControlBar(Composite parent, Listener resetListener, IRange<IQuantity> recordingRange) {
 		super(parent, SWT.NO_BACKGROUND);
 		this.setLayout(new GridLayout(3, false));
 
@@ -32,7 +32,7 @@ public class ChartFilterControlBar extends Composite {
 		nameLabel.setLayoutData(gd);
 		nameLabel.setFont(JFaceResources.getFontRegistry().get(JFaceResources.BANNER_FONT));
 
-		timeFilter = new TimeFilter(this, recordingRange, filterListener, resetListener);
+		timeFilter = new TimeFilter(this, recordingRange, resetListener);
 		timeFilter.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
 
 		laneActivityBtn = new Button(this, SWT.PUSH);

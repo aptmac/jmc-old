@@ -35,7 +35,7 @@ public class TimeFilter extends Composite {
 	private TimeDisplay startDisplay;
 	private TimeDisplay endDisplay;
 
-	public TimeFilter(Composite parent, IRange<IQuantity> recordingRange, Listener filterListener, Listener resetListener) {
+	public TimeFilter(Composite parent, IRange<IQuantity> recordingRange, Listener resetListener) {
 		super(parent, SWT.NO_BACKGROUND);
 		this.setLayout(new GridLayout(7, false));
 		Label eventsLabel = new Label(this, SWT.LEFT | SWT.HORIZONTAL);
