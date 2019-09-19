@@ -35,14 +35,9 @@ package org.openjdk.jmc.flightrecorder.ui.pages;
 import static org.openjdk.jmc.common.item.Aggregators.max;
 import static org.openjdk.jmc.common.item.Aggregators.min;
 
-//import java.awt.Button;
-import java.awt.Color;
-//import java.awt.MenuItem;
-//import java.awt.Menu;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -53,10 +48,7 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionAdapter;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.openjdk.jmc.common.IMCThread;
@@ -73,8 +65,6 @@ import org.openjdk.jmc.flightrecorder.JfrAttributes;
 import org.openjdk.jmc.flightrecorder.jdk.JdkAttributes;
 import org.openjdk.jmc.flightrecorder.jdk.JdkTypeIDs;
 import org.openjdk.jmc.flightrecorder.rules.util.JfrRuleTopics;
-import org.openjdk.jmc.flightrecorder.ui.EventTypeFolderNode;
-import org.openjdk.jmc.flightrecorder.ui.EventTypeFolderNode.EventTypeNode;
 import org.openjdk.jmc.flightrecorder.ui.FlightRecorderUI;
 import org.openjdk.jmc.flightrecorder.ui.IDataPageFactory;
 import org.openjdk.jmc.flightrecorder.ui.IDisplayablePage;
@@ -83,8 +73,6 @@ import org.openjdk.jmc.flightrecorder.ui.IPageDefinition;
 import org.openjdk.jmc.flightrecorder.ui.IPageUI;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.AbstractDataPage;
-import org.openjdk.jmc.flightrecorder.ui.common.CheckedComboBoxItem;
-//import org.openjdk.jmc.flightrecorder.ui.common.CheckedComboBox;
 import org.openjdk.jmc.flightrecorder.ui.common.FilterComponent;
 import org.openjdk.jmc.flightrecorder.ui.common.FlavorSelector.FlavorSelectorState;
 import org.openjdk.jmc.flightrecorder.ui.common.ImageConstants;
@@ -92,8 +80,8 @@ import org.openjdk.jmc.flightrecorder.ui.common.ItemHistogram;
 import org.openjdk.jmc.flightrecorder.ui.common.ItemHistogram.HistogramSelection;
 import org.openjdk.jmc.flightrecorder.ui.common.ItemHistogram.ItemHistogramBuilder;
 import org.openjdk.jmc.flightrecorder.ui.common.ItemRow;
+import org.openjdk.jmc.flightrecorder.ui.common.DropdownLaneFilter;
 import org.openjdk.jmc.flightrecorder.ui.common.ThreadGraphLanes;
-import org.openjdk.jmc.flightrecorder.ui.common.TypeLabelProvider;
 import org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages;
 import org.openjdk.jmc.flightrecorder.ui.selection.SelectionStoreActionToolkit;
 import org.openjdk.jmc.ui.UIPlugin;
@@ -188,6 +176,7 @@ public class ThreadsPage extends AbstractDataPage {
 		private List<IXDataRenderer> threadRows;
 		private MCContextMenuManager mm;
 		private ThreadGraphLanes lanes;
+		private DropdownLaneFilter laneFilter;
 
 		ThreadsPageUi(Composite parent, FormToolkit toolkit, IPageContainer editor, IState state) {
 			super(pageFilter, getDataSource(), parent, toolkit, editor, state, getName(), pageFilter, getIcon(),
@@ -205,54 +194,17 @@ public class ThreadsPage extends AbstractDataPage {
 							FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_TABLE)));
 			form.getToolBarManager().update(true);
 			chartLegend.getControl().dispose();
+			setupFilterBar();
 			buildChart();
 			chart.setVisibleRange(visibleRange.getStart(), visibleRange.getEnd());
 			onFilterChange(tableFilter);
+		}
 
-			filterBar.setThreadLaneActivityListener(new SelectionListener() {
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					lanes.openEditLanesDialog(mm, false);
-				}
-
-				@Override
-				public void widgetDefaultSelected(SelectionEvent e) {
-				}
-			});
+		private void setupFilterBar() {
+			laneFilter = new DropdownLaneFilter(filterBar, lanes, mm);
+			laneFilter.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
 			filterBar.setChart(chart);
 			filterBar.setChartCanvas(chartCanvas);
-//			Composite embed = new Composite(controls, SWT.EMBEDDED);
-//			embed.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-//			Frame frame = SWT_AWT.new_Frame(embed);
-//			List<CheckedComboBoxItem> list = getActivityLanes(); 
-//			CheckedComboBox<CheckedComboBoxItem> ccb = new CheckedComboBox<CheckedComboBoxItem>(list.toArray(new CheckedComboBoxItem[list.size()]));
-//			frame.add(ccb);
-//			controls.pack();
-		}
-
-		private List<CheckedComboBoxItem> getActivityLanes() {
-			List<CheckedComboBoxItem> list = new ArrayList<>();
-			Set<String> enabled = lanes.getEnabledLanes();
-			lanes.getTypeTree().getChildren();
-			for (Object child : lanes.getTypeTree().getChildren()) {
-				searchFolder(child, list, enabled);
-			}
-			return list;
-		}
-
-		private void searchFolder(Object node, List<CheckedComboBoxItem> list, Set<String> enabled) {
-			if (node instanceof EventTypeFolderNode) {
-				for (Object child : ((EventTypeFolderNode) node).getChildren()) {
-					searchFolder(child, list, enabled);
-				}
-			} else if (node instanceof EventTypeNode) {
-				EventTypeNode n = ((EventTypeNode) node);
-				int count = n.getCount().numberValue().intValue();
-				String typeId = n.getType().getIdentifier() + " (" + Integer.toString(count) + ")" ;
-				Color color = TypeLabelProvider.getColorOrDefault(n.getType().getIdentifier().toString());
-				Boolean checked = enabled.contains(n.getType().getIdentifier().toString());
-				list.add(new CheckedComboBoxItem(typeId, color, checked));
-			}
 		}
 
 		/**
@@ -480,9 +432,6 @@ public class ThreadsPage extends AbstractDataPage {
 	public ThreadsPage(IPageDefinition definition, StreamModel model, IPageContainer editor) {
 		super(definition, model, editor);
 		visibleRange = editor.getRecordingRange();
-		editor.getRecordingRange().getEnd();
-		editor.getRecordingRange().getExtent();
-
 	}
 
 	@Override

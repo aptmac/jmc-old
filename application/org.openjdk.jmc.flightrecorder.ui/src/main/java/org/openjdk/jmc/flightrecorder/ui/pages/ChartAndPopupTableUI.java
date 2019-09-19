@@ -113,7 +113,6 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 	private Composite hiddenTableContainer;
 
 	private TimelineCanvas timelineCanvas;
-	protected Composite controls;
 	public ChartFilterControlBar filterBar;
 	private ChartDisplayControlBar cdcb;
 
@@ -152,19 +151,13 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		 * Chart and Text Container (2 column gridlayout) - Contains scText and textCanvas) & scChart (and chart canvas)
 		 */
 		// Filter Controls
-		Listener filterListener = new Listener() {
-			@Override
-			public void handleEvent(Event event) {
-				onSetRange(true);
-			}
-		};
 		Listener resetListener = new Listener() {
 			@Override
 			public void handleEvent(Event event) {
 				onSetRange(false);
 			}
 		};
-		filterBar = new ChartFilterControlBar(chartContainer, filterListener, resetListener, pageContainer.getRecordingRange());
+		filterBar = new ChartFilterControlBar(chartContainer, resetListener, pageContainer.getRecordingRange());
 		filterBar.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
 		filterBar.setBackground(Palette.PF_BLACK_300.getSWTColor());
 

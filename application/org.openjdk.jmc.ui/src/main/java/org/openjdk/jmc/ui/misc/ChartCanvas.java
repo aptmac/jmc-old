@@ -218,7 +218,7 @@ public class ChartCanvas extends Canvas {
 
 		@Override
 		public void paintControl(PaintEvent e) {
-			Rectangle rect = getClientArea();
+			Rectangle rect = new Rectangle(0, 0, getParent().getSize().x, getParent().getSize().y);
 			if (getNumItems() == 1 || (MIN_LANE_HEIGHT * getNumItems() < rect.height)) {
 				// it fills the height
 			} else {
