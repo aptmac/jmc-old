@@ -44,7 +44,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.function.Consumer;
 
-import org.eclipse.swt.widgets.Scale;
 import org.openjdk.jmc.common.IDisplayable;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
@@ -190,7 +189,7 @@ public class XYChart {
 		int x2 = (int) Math.ceil(fullRangeAxis.getPixel(currentEnd));
 		
 		if (timelineCanvas != null) {
-			timelineCanvas.renderRangeIndicator(x1, x2, axisWidth);
+			timelineCanvas.renderRangeIndicator(x1, x2);
 		} else {
 			context.setPaint(RANGE_INDICATION_COLOR);
 			context.fillRect(x1, rangeIndicatorY, x2 - x1, RANGE_INDICATOR_HEIGHT);
@@ -563,7 +562,7 @@ public class XYChart {
 	}
 
 	public void setVisibleRange(IQuantity rangeStart, IQuantity rangeEnd) {
-		if (rangeDuration != null && !isZoomCalculated && rangeStart != start && !isZoomPanDrag) {
+		if (rangeDuration != null && !isZoomCalculated && rangeStart != start && !getIsZoomPanDrag()) {
 			selectionZoom(rangeStart, rangeEnd);
 		}
 		isZoomCalculated = false;

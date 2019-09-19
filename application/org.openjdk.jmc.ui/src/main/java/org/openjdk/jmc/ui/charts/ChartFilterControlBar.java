@@ -10,6 +10,7 @@ import org.eclipse.swt.widgets.Listener;
 
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
+import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.misc.ChartCanvas;
 
 public class ChartFilterControlBar extends Composite {

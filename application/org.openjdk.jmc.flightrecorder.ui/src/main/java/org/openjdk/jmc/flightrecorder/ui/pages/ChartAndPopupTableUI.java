@@ -127,10 +127,8 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		this.model = model;
 		this.pageContainer = pageContainer;
 		form = DataPageToolkit.createForm(parent, toolkit, sectionTitle, icon);
-		sash = new SashForm(form.getBody(), SWT.VERTICAL);
-		toolkit.adapt(sash);
 
-		hiddenTableContainer = new Composite(sash, SWT.NONE);
+		hiddenTableContainer = new Composite(form, SWT.NONE);
 		hiddenTableContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		hiddenTableContainer.setVisible(false);
 
@@ -140,13 +138,6 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		tableFilterComponent = FilterComponent.createFilterComponent(hiddenTable.getManager().getViewer().getControl(),
 				hiddenTable.getManager(), tableFilter, model.getItems().apply(pageFilter),
 				pageContainer.getSelectionStore()::getSelections, this::onFilterChange);
-		
-		chartContainer = toolkit.createComposite(sash);
-		GridLayout gridLayout = new GridLayout(1, true);
-		gridLayout.marginWidth = 0;
-		gridLayout.marginHeight = 0;
-		chartContainer.setLayout(gridLayout);
-		chartContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
 		/**
 		 * Chart Container (1 column gridlayout) - Contains filter bar & graph container
@@ -157,6 +148,9 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		 * Full screen Chart Container (1 column gridlayout) - Contains chart container
 		 * Chart and Text Container (2 column gridlayout) - Contains scText and textCanvas) & scChart (and chart canvas)
 		 */
+		chartContainer = toolkit.createComposite(form.getBody());
+		chartContainer.setLayout(new GridLayout());
+		chartContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		// Filter Controls
 		Listener resetListener = new Listener() {
 			@Override
@@ -170,7 +164,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 
 		// Container to hold the chart (& timeline) and display toolbar
 		Composite graphContainer = toolkit.createComposite(chartContainer);
-		gridLayout = new GridLayout(2, false);
+		GridLayout gridLayout = new GridLayout(2, false);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
 		graphContainer.setLayout(gridLayout);
@@ -178,8 +172,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 
 		// Container to hold the chart and timeline canvas
 		Composite chartAndTimelineContainer = toolkit.createComposite(graphContainer);
-		gridLayout = new GridLayout(1, false);
-		gridLayout.verticalSpacing = 2;
+		gridLayout = new GridLayout();
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
 		chartAndTimelineContainer.setLayout(gridLayout);
@@ -202,7 +195,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 
 		// Container to hold the chart
 		Composite fullScreenChartContainer = toolkit.createComposite(zoomPanAndChartContainer);
-		fullScreenChartContainer.setLayout(new GridLayout(1,false));
+		fullScreenChartContainer.setLayout(gridLayout);
 		fd = new FormData();
 		fd.right = new FormAttachment(100, -1);
 		fd.top = new FormAttachment(0, 1);
@@ -219,15 +212,19 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		chartAndTextContainer.setLayout(gridLayout);
 		chartAndTextContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
+		sash = new SashForm(chartAndTextContainer, SWT.VERTICAL);
+		sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		toolkit.adapt(sash);
+
 		ScrolledCompositeToolkit sct = new ScrolledCompositeToolkit(Display.getCurrent());
-		ScrolledComposite scText = sct.createScrolledComposite(chartAndTextContainer);
+		ScrolledComposite scText = sct.createScrolledComposite(sash);
 		GridData scTextGd = new GridData(SWT.FILL, SWT.FILL, false, true);
 		scTextGd.widthHint = 180;
 		scText.setLayoutData(scTextGd);
 		textCanvas = new ChartTextCanvas(scText);
 		textCanvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
 
-		ScrolledComposite scChart = sct.createScrolledComposite(chartAndTextContainer);
+		ScrolledComposite scChart = sct.createScrolledComposite(sash);
 		scChart.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		chartCanvas = new ChartCanvas(scChart);
 		chartCanvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -244,7 +241,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		scText.setExpandHorizontal(true);
 		scText.setExpandVertical(true);
 
-		timelineCanvas = new TimelineCanvas(chartAndTimelineContainer, 180);
+		timelineCanvas = new TimelineCanvas(chartAndTimelineContainer, sash);
 		GridData gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
 		gridData.heightHint = 40; // TODO: replace with constant
 		timelineCanvas.setLayoutData(gridData);
