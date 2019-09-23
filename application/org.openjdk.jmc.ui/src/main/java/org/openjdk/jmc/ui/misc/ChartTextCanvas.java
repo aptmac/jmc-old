@@ -53,13 +53,11 @@ import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.MouseTrackListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.openjdk.jmc.common.IDisplayable;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.ui.UIPlugin;
 import org.openjdk.jmc.ui.accessibility.FocusTracker;
@@ -69,7 +67,6 @@ import org.openjdk.jmc.ui.charts.XYChart;
 import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.common.util.Environment;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
-import org.openjdk.jmc.ui.misc.ChartCanvas.KeyNavigator;
 
 public class ChartTextCanvas extends Canvas {
 	private static int MIN_LANE_HEIGHT = 50;

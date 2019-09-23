@@ -239,8 +239,11 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		buildChart();
 
 		// Temp: Pass the chart into the toolbars for information retrieval
-		cdcb.setCanvas(chartCanvas);
+		cdcb.setChartCanvas(chartCanvas);
+		cdcb.setTextCanvas(textCanvas);
 		cdcb.setChart(chart);
+		chartCanvas.setZoomToSelectionListener(() -> cdcb.zoomToSelection());
+		chartCanvas.setZoomOnClickListener(()-> cdcb.setZoomOnClickData());
 
 		if (chartState != null) {
 			final String legendSelection = chartState.getAttribute(SELECTED);

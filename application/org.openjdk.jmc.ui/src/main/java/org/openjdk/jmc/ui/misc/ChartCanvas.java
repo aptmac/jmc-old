@@ -53,6 +53,7 @@ import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.MouseTrackListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
@@ -184,6 +185,9 @@ public class ChartCanvas extends Canvas {
 				selectionStartY = -1;
 				if (selectionListener != null) {
 					selectionListener.run();
+					if (zoomToSelectionListener != null && !selectionIsClick) {
+						zoomToSelectionListener.run();
+					}
 				}
 			}
 		}
@@ -400,10 +404,12 @@ public class ChartCanvas extends Canvas {
 	private final AwtCanvas awtCanvas = new AwtCanvas();
 	private boolean awtNeedsRedraw;
 	private Runnable selectionListener;
+	private Runnable zoomToSelectionListener;
 	private IPropertyChangeListener aaListener;
 	private XYChart awtChart;
 	private MCContextMenuManager chartMenu;
 	private ChartTextCanvas textCanvas;
+	private Runnable zoomOnClickListener;
 
 	public ChartCanvas(Composite parent) {
 		super(parent, SWT.NO_BACKGROUND);
@@ -611,6 +617,10 @@ public class ChartCanvas extends Canvas {
 				if (!awtChart.select(p.x, p.x, p.y, p.y, true)) {
 					awtChart.clearSelection();
 				}
+
+				if (zoomOnClickListener != null) {
+					zoomOnClickListener.run();
+				}
 			}
 			redrawChart();
 			redrawChartText();
@@ -642,10 +652,22 @@ public class ChartCanvas extends Canvas {
 		this.selectionListener = selectionListener;
 	}
 
+	public void setZoomToSelectionListener(Runnable zoomListener) {
+		this.zoomToSelectionListener = zoomListener;
+	}
+
+	public void setZoomOnClickListener(Runnable clickListener) {
+		this.zoomOnClickListener = clickListener;
+	}
+
 	private void notifyListener() {
 		if (selectionListener != null) {
 			selectionListener.run();
 		}
+	}
+
+	public void changeCursor(Cursor cursor) {
+		setCursor(cursor);
 	}
 
 	public void infoAt(IChartInfoVisitor visitor, int x, int y) {
