@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 import java.util.function.Consumer;
 
 import org.openjdk.jmc.common.IDisplayable;
@@ -48,6 +49,7 @@ import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.common.unit.QuantitiesToolkit;
 import org.openjdk.jmc.common.unit.QuantityRange;
+import org.openjdk.jmc.common.unit.UnitLookup;
 import org.openjdk.jmc.ui.charts.IChartInfoVisitor.ITick;
 import org.openjdk.jmc.ui.common.PatternFly.Palette;
 
@@ -58,8 +60,11 @@ public class XYChart {
 	private static final int Y_OFFSET = 35;
 	private static final int RANGE_INDICATOR_HEIGHT = 7;
 	private static final double ZOOM_FACTOR = 0.05;
+	private static final int ZOOM_MODIFIER = 2;
+	private double zoomPower = ZOOM_FACTOR / ZOOM_MODIFIER;
 	private final IQuantity start;
 	private final IQuantity end;
+	private IQuantity rangeDuration;
 	private IXDataRenderer rendererRoot;
 	private IRenderedRow rendererResult;
 	private final int xOffset;
@@ -94,6 +99,7 @@ public class XYChart {
 		this(range.getStart(), range.getEnd(), rendererRoot, xOffset);
 		this.timelineCanvas = timelineCanvas;
 		this.filterBar = filterBar;
+		this.rangeDuration = range.getExtent();
 	}
 	
 	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, int bucketWidth) {
@@ -336,6 +342,9 @@ public class XYChart {
 	 * @return true if the bounds changed. That is, if a redraw is required.
 	 */
 	public boolean zoom(int zoomInSteps) {
+		if (rangeDuration != null) {
+			return zoomRange(zoomInSteps);
+		}
 		return zoomXAxis(axisWidth / 2, zoomInSteps);
 	}
 
@@ -350,26 +359,7 @@ public class XYChart {
 		return zoomXAxis(x - xOffset, zoomInSteps);
 	}
 
-//	private int currentZoom = 0;
-//	private boolean zoomXAxis(int x, int zoomInSteps) {
-//		if (xBucketRange == null) {
-//			// Return true since a redraw forces creation of xBucketRange.
-//			return true;
-//		}
-//		if ((x > 0) && (x < axisWidth)) {
-//			currentZoom += zoomInSteps;
-//			double t = (Math.floor(currentZoom/10.0));
-//			if (t == 0 ) { t++; }
-//			int newStart = (int) (ZOOM_FACTOR * currentZoom * axisWidth);
-//			int newEnd = axisWidth - newStart;
-//			if (xAxis == null) {
-//				xAxis = new SubdividedQuantityRange(start, end, axisWidth, 1);
-//			}
-//			setVisibleRange(xAxis.getQuantityAtPixel(newStart), xAxis.getQuantityAtPixel(newEnd));
-//			return true;
-//		}
-//		return false;
-//	}
+	// Defualt zoom mechanics
 	private boolean zoomXAxis(int x, int zoomInSteps) {
 		if (xBucketRange == null) {
 			// Return true since a redraw forces creation of xBucketRange.
@@ -387,6 +377,91 @@ public class XYChart {
 			return (currentStart.compareTo(oldStart) != 0) || (currentEnd.compareTo(oldEnd) != 0);
 		}
 		return false;
+	}
+
+	// JFR Threads Page zoom mechanics
+	private Stack<Integer> modifiedSteps;
+	private int zoomSteps;
+
+	// Zoom based on a percentage of the recording range
+	public boolean zoomRange(int zoomInSteps) {
+		if (xBucketRange == null) {
+			// Return true since a redraw forces creation of xBucketRange.
+			return true;
+		}
+		if (zoomInSteps > 0) {
+			zoomIn(this.currentStart, this.currentEnd);
+		} else {
+			if (zoomSteps == 0) {
+				return false;
+			}
+			zoomOut();
+		}
+		return true;
+	}
+
+	/** 
+	 * Zoom into the chart at a rate of 5% of the overall recording range at each step.
+	 * If the chart is zoomed in far enough such that one more step at 5% is not possible,
+	 * the zoom power is halved and the zoom will proceed.
+	 * <br>
+	 * Every time the zoom power is halved, the instigating step value is pushed onto the
+	 * modifiedSteps stack. This stack is consulted on zoom out events in order to ensure
+	 * the chart zooms out the same way it was zoomed in.
+	 */
+	private void zoomIn(IQuantity currentStart, IQuantity currentEnd) {
+		IQuantity zoomDiff = rangeDuration.multiply(zoomPower);
+		IQuantity newStart = currentStart.in(UnitLookup.EPOCH_NS).add(zoomDiff);
+		IQuantity newEnd = currentEnd.in(UnitLookup.EPOCH_NS).subtract(zoomDiff);
+		if (newStart.compareTo(newEnd) >= 0) { // adjust the zoom factor
+			if (modifiedSteps == null) {
+				modifiedSteps = new Stack<Integer>();
+			}
+			modifiedSteps.push(zoomSteps);
+			zoomPower = zoomPower / ZOOM_MODIFIER;
+			zoomDiff = rangeDuration.multiply(zoomPower);
+			newStart = currentStart.in(UnitLookup.EPOCH_NS).add(zoomDiff);
+			newEnd = currentEnd.in(UnitLookup.EPOCH_NS).subtract(zoomDiff);
+		}
+		setVisibleRange(newStart, newEnd);
+		zoomSteps++;
+	}
+
+	/**
+	 * Zoom out of the chart at a rate equal to the way the chart was zoomed in.
+	 */
+	private void zoomOut() {
+		if (modifiedSteps != null && modifiedSteps.size() > 0 && modifiedSteps.peek() == zoomSteps) {
+			modifiedSteps.pop();
+			zoomPower = zoomPower * ZOOM_MODIFIER;
+		}
+		IQuantity zoomDiff = rangeDuration.multiply(zoomPower);
+		// Check to see if the new beginning/end point is equal to or less than the range start or end.
+		// If it is, find the diff of the amount that is supposed to added to the end, and add it to the other end instead
+		setVisibleRange(currentStart.in(UnitLookup.EPOCH_NS).subtract(zoomDiff),
+					currentEnd.in(UnitLookup.EPOCH_NS).add(zoomDiff));
+		zoomSteps--;
+	}
+
+	// need to check from ChartAndPopupTableUI if not using the OG start/end position,
+	// will have to calculate the new zoom level
+	public void resetZoomFactor() {
+		zoomSteps = 0;
+		zoomPower = ZOOM_FACTOR / ZOOM_MODIFIER;
+		calculateZoom();
+		modifiedSteps = new Stack<Integer>();
+	}
+
+	// Reset the visible range to be the recording range, and reset the zoom-related objects
+	public void resetTimeline() {
+		resetZoomFactor();
+		setVisibleRange(start, end);
+	}
+
+	// When a drag-select zoom occurs, use the new range value to determine how many steps have been taken,
+	// and adjust zoomSteps and zoomPower accordingly
+	private void calculateZoom() {
+		// do something
 	}
 
 	public void setVisibleRange(IQuantity rangeStart, IQuantity rangeEnd) {

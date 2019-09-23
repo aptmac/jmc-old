@@ -48,7 +48,7 @@ public class ChartDisplayControlBar extends Composite {
 	private XYChart chart;
 	private ChartCanvas chartCanvas;
 	private ChartTextCanvas textCanvas;
-	private List<Button> buttonGroup = new ArrayList<>();;
+	private List<Button> buttonGroup = new ArrayList<>();
 	private Button zoomInBtn;
 	private Button zoomOutBtn;
 	private Button selectionBtn;
@@ -147,21 +147,21 @@ public class ChartDisplayControlBar extends Composite {
 
 		scale = new Scale(this, SWT.VERTICAL);
 		scale.setMinimum(0);
-		scale.setMaximum(50);
+		scale.setMaximum(30);
 		scale.setIncrement(1);
-		scale.setSelection(50);
+		scale.setSelection(30);
 		scale.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		scale.addListener(SWT.Selection, new Listener() {
-			@Override
-			public void handleEvent(Event event) {
-				setButtonSelectionStates(null, null);
-				changeCursor(DEFAULT_CURSOR);
-				zoomInOut(getZoomValueByScale() - zoomValue);
-			}
-		});
+		scale.setEnabled(false);
+//		scale.addListener(SWT.Selection, new Listener() {
+//			@Override
+//			public void handleEvent(Event event) {
+//				setButtonSelectionStates(null);
+//				changeCursor(DEFAULT_CURSOR);
+//				zoomInOut(getZoomValueByScale() - zoomValue);
+//			}
+//		});
 
-		text = new Text(this, SWT.BORDER | SWT.SINGLE);
-		text.setEditable(false);
+		text = new Text(this, SWT.BORDER | SWT.READ_ONLY | SWT.SINGLE);
 		text.setText(Integer.toString(0));
 		text.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
 
@@ -170,7 +170,7 @@ public class ChartDisplayControlBar extends Composite {
 		zoomOutBtn.setSelection(false);
 		zoomOutBtn.addListener(SWT.Selection,  new Listener() {
 			@Override
-			public void handleEvent(Event event) {
+			public void handleEvent(Event e) {
 				if (scale.getSelection() < scale.getMaximum()) {
 					setButtonSelectionStates(zoomOutBtn, zoomPanBtn);
 					changeCursor(ZOOM_OUT_CURSOR);
@@ -485,8 +485,8 @@ public class ChartDisplayControlBar extends Composite {
 	}
 
 	public void resetZoomScale() {
-//		this.scale.setSelection(scale.getMaximum());
-//		zoomValue = 0;
-//		text.setText(Integer.toString(0));
+		this.scale.setSelection(scale.getMaximum());
+		zoomValue = 0;
+		text.setText(Integer.toString(0));
 	}
 }

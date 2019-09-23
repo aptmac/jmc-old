@@ -317,6 +317,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 	private void onSetRange(Boolean useRange) {
 		IRange<IQuantity> range = useRange ? timeRange : pageContainer.getRecordingRange();
 		chart.setVisibleRange(range.getStart(), range.getEnd());
+		chart.resetZoomFactor();
 		cdcb.resetZoomScale();
 		buildChart();
 	}
