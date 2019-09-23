@@ -185,7 +185,7 @@ public class ChartCanvas extends Canvas {
 				selectionStartY = -1;
 				if (selectionListener != null) {
 					selectionListener.run();
-					if (zoomToSelectionListener != null) {
+					if (zoomToSelectionListener != null && !selectionIsClick) {
 						zoomToSelectionListener.run();
 					}
 				}
@@ -409,6 +409,7 @@ public class ChartCanvas extends Canvas {
 	private XYChart awtChart;
 	private MCContextMenuManager chartMenu;
 	private ChartTextCanvas textCanvas;
+	private Runnable zoomOnClickListener;
 
 	public ChartCanvas(Composite parent) {
 		super(parent, SWT.NO_BACKGROUND);
@@ -616,6 +617,10 @@ public class ChartCanvas extends Canvas {
 				if (!awtChart.select(p.x, p.x, p.y, p.y, true)) {
 					awtChart.clearSelection();
 				}
+
+				if (zoomOnClickListener != null) {
+					zoomOnClickListener.run();
+				}
 			}
 			redrawChart();
 			redrawChartText();
@@ -649,6 +654,10 @@ public class ChartCanvas extends Canvas {
 
 	public void setZoomToSelectionListener(Runnable zoomListener) {
 		this.zoomToSelectionListener = zoomListener;
+	}
+
+	public void setZoomOnClickListener(Runnable clickListener) {
+		this.zoomOnClickListener = clickListener;
 	}
 
 	private void notifyListener() {

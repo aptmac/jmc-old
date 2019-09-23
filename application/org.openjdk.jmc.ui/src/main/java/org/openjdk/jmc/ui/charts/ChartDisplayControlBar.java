@@ -1,5 +1,10 @@
 package org.openjdk.jmc.ui.charts;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.layout.GridData;
@@ -17,16 +22,19 @@ import org.openjdk.jmc.ui.misc.ChartCanvas;
 import org.openjdk.jmc.ui.misc.ChartTextCanvas;
 
 public class ChartDisplayControlBar extends Composite {
-	private static final Cursor DEFAULT_CURSOR = Display.getCurrent().getSystemCursor(SWT.CURSOR_ARROW);
+	private static final String ZOOM_IN_CURSOR = "zoomInCursor";
+	private static final String ZOOM_OUT_CURSOR = "zoomOutCursor";
+	private static final String DEFAULT_CURSOR = "defaultCursor";
+	private Map< String, Cursor > cursors = new HashMap<> ();
 	private Scale scale;
 	private Text text;
 	private XYChart chart;
 	private ChartCanvas chartCanvas;
 	private ChartTextCanvas textCanvas;
+	private List<Button> buttonGroup = new ArrayList<>();;
 	private Button zoomInBtn;
 	private Button zoomOutBtn;
 	private Button selectionBtn;
-	private Cursor zoomCursor;
 	int zoomValue = 0;
 
 	public void setChart(XYChart chart) {
@@ -39,6 +47,16 @@ public class ChartDisplayControlBar extends Composite {
 
 	public void setTextCanvas(ChartTextCanvas textCanvas) {
 		this.textCanvas = textCanvas;
+	}
+
+	public void setZoomOnClickData() {
+		boolean shouldZoom = zoomInBtn.getSelection() || zoomOutBtn.getSelection() ;
+		if (shouldZoom) {
+			int zoomAmount = zoomInBtn.getSelection() ? 1 : -1;
+			chart.clearSelection();
+			zoomInOut(zoomAmount);
+			textCanvas.redrawChartText();
+		}
 	}
 
 	public void zoomToSelection() {
@@ -64,6 +82,12 @@ public class ChartDisplayControlBar extends Composite {
 		this.setBackground(Display.getCurrent().getSystemColor(SWT.COLOR_GRAY));
 		this.setLayout(layout);
 
+		cursors.put(DEFAULT_CURSOR, Display.getCurrent().getSystemCursor(SWT.CURSOR_ARROW));
+		cursors.put(ZOOM_IN_CURSOR, new Cursor(getDisplay(),
+				UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_IN).getImageData(), 0, 0));
+		cursors.put(ZOOM_OUT_CURSOR, new Cursor(getDisplay(),
+				UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_OUT).getImageData(), 0, 0));
+
 		selectionBtn = new Button(this, SWT.TOGGLE);
 		selectionBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_SELECTION));
 		selectionBtn.setSelection(true);
@@ -71,9 +95,11 @@ public class ChartDisplayControlBar extends Composite {
 
 			@Override
 			public void handleEvent(Event event) {
-				setSelectionState(false);
+				setButtonSelectionStates(selectionBtn);
+				changeCursor(DEFAULT_CURSOR);
 			};
 		});
+		buttonGroup.add(selectionBtn);
 
 		// SPACE
 
@@ -84,16 +110,15 @@ public class ChartDisplayControlBar extends Composite {
 			@Override
 			public void handleEvent(Event event) {
 				if (scale.getSelection() > 0) {
-					setSelectionState(true);
-					scale.setSelection(scale.getSelection() - scale.getIncrement());
-					int value = scale.getMaximum() - scale.getSelection() + scale.getMinimum();
-					text.setText(Integer.toString(value));
-					zoomValue++;
-					chart.zoom(1);
-					chartCanvas.redrawChart();
+					setButtonSelectionStates(zoomInBtn);
+					changeCursor(ZOOM_IN_CURSOR);
+				} else {
+					setButtonSelectionStates(selectionBtn);
+					changeCursor(DEFAULT_CURSOR);
 				}
 			}
 		});
+		buttonGroup.add(zoomInBtn);
 
 		scale = new Scale(this, SWT.VERTICAL);
 		scale.setMinimum(0);
@@ -104,21 +129,12 @@ public class ChartDisplayControlBar extends Composite {
 		scale.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
-				int value = scale.getMaximum() - scale.getSelection() + scale.getMinimum();
-				text.setText(Integer.toString(value));
-				if (scale.getSelection() > scale.getMinimum() || scale.getSelection() < scale.getMaximum()) {
-					if (zoomValue < value) {
-						chart.zoom(1);
-						zoomValue = value;
-						chartCanvas.redrawChart();
-					} else if (zoomValue > value) {
-						chart.zoom(-1);
-						zoomValue = value;
-						chartCanvas.redrawChart();
-					}
-				}
+				setButtonSelectionStates(null);
+				changeCursor(DEFAULT_CURSOR);
+				zoomInOut(getZoomValueByScale() - zoomValue);
 			}
 		});
+
 		text = new Text(this, SWT.BORDER | SWT.SINGLE);
 		text.setEditable(false);
 		text.setText(Integer.toString(0));
@@ -131,43 +147,81 @@ public class ChartDisplayControlBar extends Composite {
 			@Override
 			public void handleEvent(Event event) {
 				if (scale.getSelection() < scale.getMaximum()) {
-					setSelectionState(true);
-					scale.setSelection(scale.getSelection() + scale.getIncrement());
-					int value = scale.getMaximum() - scale.getSelection() + scale.getMinimum();
-					text.setText(Integer.toString(value));
-					chart.zoom(-1);
-					zoomValue--;
-					chartCanvas.redrawChart();
+					setButtonSelectionStates(zoomOutBtn);
+					changeCursor(ZOOM_OUT_CURSOR);
+				} else {
+					setButtonSelectionStates(selectionBtn);
+					changeCursor(DEFAULT_CURSOR);
 				}
 			}
 		});
+		buttonGroup.add(zoomOutBtn);
 
 		// SPACE
 
 		Button movementBtn = new Button(this, SWT.TOGGLE);
 		movementBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_PAN));
+		movementBtn.setSelection(false);
+		movementBtn.addListener(SWT.Selection, new Listener() {
+
+			@Override
+			public void handleEvent(Event event) {
+				setButtonSelectionStates(movementBtn);
+				changeCursor(DEFAULT_CURSOR);
+			}
+
+		});
+		buttonGroup.add(movementBtn);
 
 		Button durationBtn = new Button(this, SWT.TOGGLE);
 		durationBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_SCALE_TO_FIT));
+		durationBtn.setSelection(false);
+		durationBtn.addListener(SWT.Selection, new Listener() {
 
-		zoomCursor = new Cursor(getDisplay(), UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_IN)
-				.getImageData(), 0, 0);
+			@Override
+			public void handleEvent(Event event) {
+				setButtonSelectionStates(durationBtn);
+				changeCursor(DEFAULT_CURSOR);
+			}
+
+		});
+		buttonGroup.add(durationBtn);
 
 	}
 
-	private void changeCursor(Cursor cursor) {
-		chartCanvas.changeCursor(cursor);
-		textCanvas.changeCursor(cursor);
-
+	private void changeCursor(String cursorName) {
+		chartCanvas.changeCursor(cursors.get(cursorName));
 	}
 
-	private void setSelectionState(boolean isZoom) {
-		zoomInBtn.setSelection(isZoom);
-		zoomOutBtn.setSelection(isZoom);
-		selectionBtn.setSelection(!isZoom);
-		changeCursor(isZoom ? zoomCursor : DEFAULT_CURSOR);
+	private void setButtonSelectionStates(Button buttonSelected) {
+		for (Button button : buttonGroup) {
+			if ((button.getStyle() & SWT.TOGGLE) != 0) {
+				if (button.equals(buttonSelected)) {
+					button.setSelection(true);
+				} else {
+					button.setSelection(false);
+				}
+			}
+		}
 	}
 
+	private void zoomInOut(int zoomAmount) {
+			int currentZoomValue = getZoomValueByScale();
+			if(currentZoomValue == zoomValue) {
+				scale.setSelection(scale.getSelection() - zoomAmount*scale.getIncrement());
+				currentZoomValue = getZoomValueByScale();
+			}
+			chart.zoom(currentZoomValue - zoomValue);
+			zoomValue = currentZoomValue;
+			int value = scale.getMaximum() - scale.getSelection() + scale.getMinimum();
+			text.setText(Integer.toString(value));
+
+			chartCanvas.redrawChart();
+	}
+
+	private int getZoomValueByScale() {
+		return (scale.getMaximum() -  scale.getSelection())/scale.getIncrement();
+	}
 
 	public void resetZoomScale() {
 //		this.scale.setSelection(scale.getMaximum());
