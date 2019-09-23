@@ -136,7 +136,6 @@ public class ChartDisplayControlBar extends Composite {
 		scale.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
-
 				setButtonSelectionStates(null);
 				changeCursor(DEFAULT_CURSOR);
 				zoomInOut(getZoomValueByScale() - zoomValue);
@@ -147,7 +146,6 @@ public class ChartDisplayControlBar extends Composite {
 		text.setEditable(false);
 		text.setText(Integer.toString(0));
 		text.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
-
 
 		zoomOutBtn = new Button(this, SWT.TOGGLE);
 		zoomOutBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_OUT));
