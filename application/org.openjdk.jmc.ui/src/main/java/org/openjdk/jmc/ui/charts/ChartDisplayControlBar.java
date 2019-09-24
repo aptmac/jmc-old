@@ -4,8 +4,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.MouseAdapter;
+import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -20,11 +24,13 @@ import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.ui.UIPlugin;
 import org.openjdk.jmc.ui.misc.ChartCanvas;
 import org.openjdk.jmc.ui.misc.ChartTextCanvas;
+import org.openjdk.jmc.ui.misc.DisplayToolkit;
 
 public class ChartDisplayControlBar extends Composite {
 	private static final String ZOOM_IN_CURSOR = "zoomInCursor";
 	private static final String ZOOM_OUT_CURSOR = "zoomOutCursor";
 	private static final String DEFAULT_CURSOR = "defaultCursor";
+	private static final int ZOOM_AMOUNT = 1;
 	private Map< String, Cursor > cursors = new HashMap<> ();
 	private Scale scale;
 	private Text text;
@@ -118,6 +124,7 @@ public class ChartDisplayControlBar extends Composite {
 				}
 			}
 		});
+		zoomInBtn.addMouseListener(new LongPressListener(ZOOM_AMOUNT));
 		buttonGroup.add(zoomInBtn);
 
 		scale = new Scale(this, SWT.VERTICAL);
@@ -155,6 +162,7 @@ public class ChartDisplayControlBar extends Composite {
 				}
 			}
 		});
+		zoomOutBtn.addMouseListener(new LongPressListener(-ZOOM_AMOUNT));
 		buttonGroup.add(zoomOutBtn);
 
 		// SPACE
@@ -202,6 +210,42 @@ public class ChartDisplayControlBar extends Composite {
 					button.setSelection(false);
 				}
 			}
+		}
+	}
+
+	private class LongPressListener extends MouseAdapter {
+
+		private static final long LONG_PRESS_TIME = 500;
+		private Timer timer;
+		private int zoomAmount;
+
+		LongPressListener(int zoomAmount) {
+			this.zoomAmount = zoomAmount;
+		}
+
+		@Override
+		public void mouseDown(MouseEvent e) {
+			if(e.button == 1) {
+				timer = new Timer();
+				timer.schedule(new LongPress(), LONG_PRESS_TIME, (long) (LONG_PRESS_TIME*1.5));
+			}
+		}
+
+		@Override
+		public void mouseUp(MouseEvent e) {
+			timer.cancel();
+		}
+
+		public class LongPress extends TimerTask {
+
+			@Override
+			public void run() {
+				doZoomInOut(zoomAmount);
+			}
+		}
+
+		private void doZoomInOut(int zoomAmount) {
+			DisplayToolkit.inDisplayThread().execute( () -> zoomInOut(zoomAmount));;
 		}
 	}
 
