@@ -67,7 +67,6 @@ public class TimeDisplay extends Composite {
 				return displayTime;
 			}
 			if (isFormatValid()) {
-				LinearUnit linearUnit;
 				IQuantity time = currentTime;
 				Matcher m = digitPattern.matcher(timeText.getText());
 				int i = 0;
@@ -76,23 +75,19 @@ public class TimeDisplay extends Composite {
 					switch(i) {
 					case 0:
 						value = value - currentCalendar.get(Calendar.HOUR);
-						linearUnit = UnitLookup.HOUR;
-						time = time.in(UnitLookup.EPOCH_NS).add(linearUnit.quantity(value).in(UnitLookup.NANOSECOND));
+						time = time.in(UnitLookup.EPOCH_NS).add(UnitLookup.HOUR.quantity(value).in(UnitLookup.NANOSECOND));
 						break;
 					case 1:
 						value = value - currentCalendar.get(Calendar.MINUTE);
-						linearUnit = UnitLookup.MINUTE;
-						time = time.in(UnitLookup.EPOCH_NS).add(linearUnit.quantity(value).in(UnitLookup.NANOSECOND));
+						time = time.in(UnitLookup.EPOCH_NS).add(UnitLookup.MINUTE.quantity(value).in(UnitLookup.NANOSECOND));
 						break;
 					case 2:
 						value = value - currentCalendar.get(Calendar.SECOND);
-						linearUnit = UnitLookup.SECOND;
-						time = time.in(UnitLookup.EPOCH_NS).add(linearUnit.quantity(value).in(UnitLookup.NANOSECOND));
+						time = time.in(UnitLookup.EPOCH_NS).add(UnitLookup.SECOND.quantity(value).in(UnitLookup.NANOSECOND));
 						break;
 					case 3:
 						value = value - currentCalendar.get(Calendar.MILLISECOND);
-						linearUnit = UnitLookup.MILLISECOND;
-						time = time.in(UnitLookup.EPOCH_NS).add(linearUnit.quantity(value).in(UnitLookup.NANOSECOND));
+						time = time.in(UnitLookup.EPOCH_NS).add(UnitLookup.MILLISECOND.quantity(value).in(UnitLookup.NANOSECOND));
 						break;
 					}
 					i++;
@@ -140,12 +135,10 @@ public class TimeDisplay extends Composite {
 			int i = 0;
 			while(m.find()) {
 				int value = Integer.parseInt(m.group());
-				if (i == 0) {
-					if (value > 23) { return false; }
-				} else if (i == 1 && i == 2) {
-					if (value > 59) { return false; }
-				} else if (i == 3){
-					// don't have to do anything
+				if (i == 0 && value >= 24) {
+					return false;
+				} else if ((i == 1 || i == 2) && value >= 60) {
+					return false;
 				}
 				i++;
 			}
