@@ -13,7 +13,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Text;
 import org.openjdk.jmc.common.unit.IQuantity;
-import org.openjdk.jmc.common.unit.LinearUnit;
 import org.openjdk.jmc.common.unit.UnitLookup;
 import org.openjdk.jmc.ui.common.PatternFly.Palette;
 
@@ -30,7 +29,7 @@ public class TimeDisplay extends Composite {
 
 		public TimeDisplay(Composite parent) {
 			super(parent, SWT.NO_BACKGROUND);
-			this.setLayout(new GridLayout(1, true));
+			this.setLayout(new GridLayout());
 			timeText = new Text(this, SWT.SEARCH | SWT.SINGLE);
 			timeText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
 			timeText.setTextLimit(12);
@@ -38,7 +37,7 @@ public class TimeDisplay extends Composite {
 				@Override
 				public void modifyText(ModifyEvent e) {
 					displayTime = null;
-					if (isFormatValid()) {
+					if (isFormatValid() && isValidTime()) {
 						timeText.setForeground(Palette.PF_BLACK.getSWTColor());
 					} else {
 						timeText.setForeground(Palette.PF_RED_100.getSWTColor());
@@ -66,7 +65,7 @@ public class TimeDisplay extends Composite {
 				formatTimeString(convertEpochToCalendar(displayTime.in(UnitLookup.EPOCH_MS).longValue()));
 				return displayTime;
 			}
-			if (isFormatValid()) {
+			if (isFormatValid() && isValidTime()) {
 				IQuantity time = currentTime;
 				Matcher m = digitPattern.matcher(timeText.getText());
 				int i = 0;
@@ -118,18 +117,21 @@ public class TimeDisplay extends Composite {
 		/**
 		 * Verify that the time string inside the text widget matches the
 		 * expected time format of HH:mm:ss:SSS
+		 * @return true if the text corresponds to a HH:mm:ss:SSS format
 		 */
-		public boolean isFormatValid() {
+		private boolean isFormatValid() {
 			if (!timePattern.matcher(timeText.getText()).matches()) {
 				// not in HH:mm:ss:SSS format
-				return false;
-			} else if (!isValidTime()) {
-				// exceeds the numerical constraints for time units
 				return false;
 			}
 			return true;
 		}
 
+		/**
+		 * Verify that the string inside the text widget is a valid
+		 * 24-hour clock time
+		 * @return true if the text corresponds to a valid 24-hour time
+		 */
 		private boolean isValidTime() {
 			Matcher m = digitPattern.matcher(timeText.getText());
 			int i = 0;

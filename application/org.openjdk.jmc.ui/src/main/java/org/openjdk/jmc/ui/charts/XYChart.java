@@ -59,9 +59,6 @@ public class XYChart {
 	private static final Color RANGE_INDICATION_COLOR = new Color(255, 60, 20);
 	private static final int Y_OFFSET = 35;
 	private static final int RANGE_INDICATOR_HEIGHT = 7;
-	private static final double ZOOM_PAN_FACTOR = 0.05;
-	private static final int ZOOM_PAN_MODIFIER = 2;
-	private double zoomPanPower = ZOOM_PAN_FACTOR / ZOOM_PAN_MODIFIER;
 	private final IQuantity start;
 	private final IQuantity end;
 	private IQuantity rangeDuration;
@@ -82,8 +79,17 @@ public class XYChart {
 	private IQuantity selectionEnd;
 	private SubdividedQuantityRange xBucketRange;
 	private SubdividedQuantityRange xTickRange;
-	private TimelineCanvas timelineCanvas;
+
+	// JFR Threads Page
+	private static final double ZOOM_PAN_FACTOR = 0.05;
+	private static final int ZOOM_PAN_MODIFIER = 2;
+	private double zoomPanPower = ZOOM_PAN_FACTOR / ZOOM_PAN_MODIFIER;
+	private double currentZoom;
+	private int zoomSteps;
+	private ChartDisplayControlBar displayBar;
 	private ChartFilterControlBar filterBar;
+	private Stack<Integer> modifiedSteps;
+	private TimelineCanvas timelineCanvas;
 
 	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot) {
 		this(range.getStart(), range.getEnd(), rendererRoot);
@@ -94,11 +100,13 @@ public class XYChart {
 	}
 
 	// JFR Threads Page
-	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, TimelineCanvas timelineCanvas, ChartFilterControlBar filterBar) {
+	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, TimelineCanvas timelineCanvas, ChartFilterControlBar filterBar, ChartDisplayControlBar displayBar) {
 		this(range.getStart(), range.getEnd(), rendererRoot, xOffset);
 		this.timelineCanvas = timelineCanvas;
 		this.filterBar = filterBar;
+		this.displayBar = displayBar;
 		this.rangeDuration = range.getExtent();
+		this.currentZoom = 100;
 	}
 	
 	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, int bucketWidth) {
@@ -363,7 +371,7 @@ public class XYChart {
 		currentStart = newStart;
 		currentEnd = newEnd;
 		filterBar.setStartTime(currentStart);
-		filterBar.setEndTime(currentEnd);		
+		filterBar.setEndTime(currentEnd);
 		return true;
 	}
 
@@ -411,12 +419,8 @@ public class XYChart {
 		return false;
 	}
 
-	// JFR Threads Page zoom mechanics
-	private Stack<Integer> modifiedSteps;
-	private int zoomSteps;
-
 	/**
-	 *  Zoom based on a percentage of the recording range
+	 * Zoom based on a percentage of the recording range
 	 * @param zoomInSteps
 	 * @return true if a redraw is required as a result of a successful zoom
 	 */
@@ -433,6 +437,8 @@ public class XYChart {
 			}
 			zoomOut();
 		}
+		// set displayBar text
+		displayBar.setZoomPercentageText(currentZoom);
 		return true;
 	}
 
@@ -460,6 +466,7 @@ public class XYChart {
 			newEnd = currentEnd.in(UnitLookup.EPOCH_NS).subtract(zoomDiff);
 		}
 		setVisibleRange(newStart, newEnd);
+		currentZoom = currentZoom + (zoomPanPower * ZOOM_PAN_MODIFIER * 100);
 		zoomSteps++;
 	}
 
@@ -472,10 +479,22 @@ public class XYChart {
 			zoomPanPower = zoomPanPower * ZOOM_PAN_MODIFIER;
 		}
 		IQuantity zoomDiff = rangeDuration.multiply(zoomPanPower);
-		// Check to see if the new beginning/end point is equal to or less than the range start or end.
-		// If it is, find the diff of the amount that is supposed to added to the end, and add it to the other end instead
-		setVisibleRange(currentStart.in(UnitLookup.EPOCH_NS).subtract(zoomDiff),
-					currentEnd.in(UnitLookup.EPOCH_NS).add(zoomDiff));
+		IQuantity newStart = currentStart.in(UnitLookup.EPOCH_NS).subtract(zoomDiff);
+		IQuantity newEnd = currentEnd.in(UnitLookup.EPOCH_NS).add(zoomDiff);
+
+		// if zooming out would flow over the recording range start or end time,
+		// calculate the difference and add it to the other side.
+		if (newStart.compareTo(start) == -1) {
+			IQuantity diff = start.subtract(newStart);
+			newStart = start;
+			newEnd = newEnd.add(diff);
+		} else if (newEnd.compareTo(end) == 1) {
+			IQuantity diff = newEnd.subtract(end);
+			newStart = newStart.subtract(diff);
+			newEnd = end;
+		}
+		setVisibleRange(newStart, newEnd);
+		currentZoom = currentZoom - (zoomPanPower * ZOOM_PAN_MODIFIER * 100);
 		zoomSteps--;
 	}
 
@@ -484,6 +503,8 @@ public class XYChart {
 	public void resetZoomFactor() {
 		zoomSteps = 0;
 		zoomPanPower = ZOOM_PAN_FACTOR / ZOOM_PAN_MODIFIER;
+		currentZoom = 100;
+		displayBar.setZoomPercentageText(currentZoom);
 		calculateZoom();
 		modifiedSteps = new Stack<Integer>();
 	}
