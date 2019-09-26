@@ -8,12 +8,15 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -29,6 +32,7 @@ import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.ui.UIPlugin;
 import org.openjdk.jmc.ui.common.PatternFly.Palette;
+import org.openjdk.jmc.ui.common.util.Environment;
 import org.openjdk.jmc.ui.misc.ChartCanvas;
 import org.openjdk.jmc.ui.misc.ChartTextCanvas;
 import org.openjdk.jmc.ui.misc.DisplayToolkit;
@@ -295,13 +299,20 @@ public class ChartDisplayControlBar extends Composite {
 	}
 
 	private class ZoomPan extends Canvas  {
-		private IRange<IQuantity> chartRange;
 		private static final int BORDER_PADDING = 2;
+		private IRange<IQuantity> chartRange;
+		private IRange<IQuantity> lastChartZoomedRange;
 		private Rectangle zoomRect;
+
+		private final double xScale = Display.getDefault().getDPI().x / Environment.getNormalDPI();
+		private final double yScale = Display.getDefault().getDPI().y / Environment.getNormalDPI();
 
 		public ZoomPan(Composite parent) {
 			super(parent, SWT.NO_BACKGROUND);
 			addPaintListener(new Painter());
+			PanDetector panDetector = new PanDetector();
+			addMouseListener(panDetector);
+			addMouseMoveListener(panDetector);
 			chartRange = chart.getVisibleRange();
 		}
 
@@ -309,11 +320,106 @@ public class ChartDisplayControlBar extends Composite {
 			redraw();
 		}
 
+		private class PanDetector extends MouseAdapter implements MouseMoveListener {
+			Point currentSelection;
+			Point lastSelection;
+			boolean isPan = false;
+
+			@Override
+			public void mouseDown(MouseEvent e) {
+				if (e.button == 1 && zoomRect.contains(e.x, e.y)) {
+					isPan = true;
+					currentSelection = translateDisplayToImageCoordinates(e.x, e.y);
+				}
+			}
+
+			@Override
+			public void mouseUp(MouseEvent e) {
+				isPan = false;
+			}
+
+			@Override
+			public void mouseMove(MouseEvent e) {
+				if (isPan && getParent().getSize().x >= e.x && getParent().getSize().y >= e.y ) {
+					lastSelection = currentSelection;
+					currentSelection = translateDisplayToImageCoordinates(e.x, e.y);
+					int xdiff = currentSelection.x - lastSelection.x;
+					int ydiff = currentSelection.y - lastSelection.y;
+					updateZoomRectFromPan(xdiff, ydiff);
+				}
+			}
+		}
+
+		private Point translateDisplayToImageCoordinates(int x, int y) {
+			int xImage = (int) Math.round(x / xScale);
+			int yImage = (int) Math.round(y / yScale);
+			return new Point(xImage, yImage);
+		}
+
+		private void updateZoomRectFromPan(int xdiff, int ydiff) {
+			Point bounds = getParent().getSize();
+			boolean xModified = false;
+			boolean yModified = false;
+
+			int xOld = zoomRect.x;
+			zoomRect.x += xdiff;
+			if (zoomRect.x > (bounds.x - zoomRect.width - BORDER_PADDING))  {
+				zoomRect.x = bounds.x - zoomRect.width - BORDER_PADDING;
+			} else if (zoomRect.x < BORDER_PADDING ) {
+				zoomRect.x = BORDER_PADDING;
+			}
+			xModified = xOld != zoomRect.x;
+
+			int yOld = zoomRect.y;
+			zoomRect.y += ydiff;
+			if (zoomRect.y < BORDER_PADDING ) {
+				zoomRect.y = BORDER_PADDING;
+			} else if (zoomRect.y > (bounds.y - zoomRect.height - BORDER_PADDING))  {
+				zoomRect.y = bounds.y - zoomRect.height - BORDER_PADDING;
+			}
+			yModified = yOld != zoomRect.y;
+
+			if (xModified || yModified) {
+				updateChartFromZoomRect(xModified, yModified);
+				chartCanvas.redrawChart();
+			}
+		}
+
+		private void updateChartFromZoomRect(boolean updateXRange, boolean updateYRange) {
+			Rectangle zoomCanvasBounds = new Rectangle(0, 0, getParent().getSize().x, getParent().getSize().y);
+			Rectangle totalBounds = chartCanvas.getBounds();
+
+			if (updateXRange) {
+				double ratio = getVisibilityRatio(zoomRect.x - BORDER_PADDING,
+						zoomCanvasBounds.x, zoomCanvasBounds.width - BORDER_PADDING);
+				int start = getPixelLocation(ratio, totalBounds.width, 0);
+
+				ratio = getVisibilityRatio(zoomRect.x + zoomRect.width + BORDER_PADDING,
+						zoomCanvasBounds.width, zoomCanvasBounds.width - BORDER_PADDING);
+				int end = getPixelLocation(ratio, totalBounds.width, totalBounds.width);
+
+				SubdividedQuantityRange xAxis = new SubdividedQuantityRange(chartRange.getStart(),
+						chartRange.getEnd(), totalBounds.width, 1);
+				chart.setVisibleRange(xAxis.getQuantityAtPixel(start), xAxis.getQuantityAtPixel(end));
+				lastChartZoomedRange = chart.getVisibleRange();
+			}
+			if (updateYRange) {
+				double ratio = getVisibilityRatio(zoomRect.y - BORDER_PADDING, 0, zoomCanvasBounds.height);
+				int top = getPixelLocation(ratio, totalBounds.height, 0);
+
+				Point p = ((ScrolledComposite) chartCanvas.getParent()).getOrigin();
+				p.y = top;
+
+				chartCanvas.syncScroll(p);
+				textCanvas.syncScroll(p);
+			}
+		}
+
 		class Painter implements PaintListener {
 			@Override
 			public void paintControl(PaintEvent e) {
-				Rectangle backgroundRect = new Rectangle(0, 0,
-						getParent().getSize().x, getParent().getSize().y);
+
+				Rectangle backgroundRect = new Rectangle(0, 0, getParent().getSize().x, getParent().getSize().y);
 				GC gc = e.gc;
 
 				gc.setBackground(Palette.PF_BLACK_400.getSWTColor());
@@ -321,7 +427,7 @@ public class ChartDisplayControlBar extends Composite {
 				gc.setForeground(Palette.PF_BLACK_900.getSWTColor());
 				gc.drawRectangle(backgroundRect);
 
-				updateZoomPanBounds();
+				updateZoomRectFromChart();
 
 				gc.setBackground(Palette.PF_BLACK_100.getSWTColor());
 				gc.fillRectangle(zoomRect);
@@ -330,7 +436,7 @@ public class ChartDisplayControlBar extends Composite {
 			}
 		}
 
-		private void updateZoomPanBounds() {
+		private void updateZoomRectFromChart() {
 			Rectangle zoomCanvasBounds = new Rectangle(0, 0, getParent().getSize().x, getParent().getSize().y);
 			IRange<IQuantity> zoomedRange = chart.getVisibleRange();
 			IQuantity visibleWidth = chartRange.getExtent();
@@ -340,17 +446,18 @@ public class ChartDisplayControlBar extends Composite {
 			if (zoomRect == null ) {
 				zoomRect = new Rectangle(0, 0, 0, 0);
 			}
+			if (!chart.getVisibleRange().equals(lastChartZoomedRange)) {
+				double ratio = getVisibilityRatio(zoomedRange.getStart(), chartRange.getStart(), visibleWidth);
+				int start = getPixelLocation(ratio, zoomCanvasBounds.width, 0);
 
-			double ratio = getVisibilityRatio(zoomedRange.getStart(), chartRange.getStart(), visibleWidth);
-			int start = getPixelLocation(ratio, zoomCanvasBounds.width, 0);
+				ratio = getVisibilityRatio(zoomedRange.getEnd(), chartRange.getEnd(), visibleWidth);
+				int end = getPixelLocation(ratio, zoomCanvasBounds.width, zoomCanvasBounds.width);
 
-			ratio = getVisibilityRatio(zoomedRange.getEnd(), chartRange.getEnd(), visibleWidth);
-			int end = getPixelLocation(ratio, zoomCanvasBounds.width, zoomCanvasBounds.width);
-
-			zoomRect.x = start + BORDER_PADDING;
-			zoomRect.width = end - start - 2 * BORDER_PADDING;
-
-			ratio = getVisibilityRatio(0, totalBounds.y, totalBounds.height);
+				zoomRect.x = start + BORDER_PADDING;
+				zoomRect.width = end - start - 2 * BORDER_PADDING;
+				lastChartZoomedRange = chart.getVisibleRange();
+			}
+			double ratio = getVisibilityRatio(0, totalBounds.y, totalBounds.height);
 			int top = getPixelLocation(ratio, zoomCanvasBounds.height, 0);
 
 			ratio = getVisibilityRatio(visibleHeight, totalBounds.height + totalBounds.y, totalBounds.height);
