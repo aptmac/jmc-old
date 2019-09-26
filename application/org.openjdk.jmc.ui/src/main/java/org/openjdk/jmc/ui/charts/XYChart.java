@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.function.Consumer;
 
+import org.eclipse.swt.widgets.Scale;
 import org.openjdk.jmc.common.IDisplayable;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
@@ -107,6 +108,7 @@ public class XYChart {
 		this.displayBar = displayBar;
 		this.rangeDuration = range.getExtent();
 		this.currentZoom = 100;
+		this.isZoomCalculated = false;
 	}
 	
 	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, int bucketWidth) {
@@ -125,9 +127,9 @@ public class XYChart {
 		this.rendererRoot = rendererRoot;
 		// Start value must always be strictly less than end
 		assert (start.compareTo(end) < 0);
-		currentStart = start;
+		this.currentStart = start;
 		this.start = start;
-		currentEnd = end;
+		this.currentEnd = end;
 		this.end = end;
 		this.xOffset = xOffset;
 		this.bucketWidth = bucketWidth;
@@ -372,6 +374,7 @@ public class XYChart {
 		currentEnd = newEnd;
 		filterBar.setStartTime(currentStart);
 		filterBar.setEndTime(currentEnd);
+		isZoomCalculated = true;
 		return true;
 	}
 
@@ -425,10 +428,6 @@ public class XYChart {
 	 * @return true if a redraw is required as a result of a successful zoom
 	 */
 	public boolean zoomRange(int zoomInSteps) {
-		if (xBucketRange == null) {
-			// Return true since a redraw forces creation of xBucketRange.
-			return true;
-		}
 		if (zoomInSteps > 0) {
 			zoomIn();
 		} else {
@@ -465,8 +464,9 @@ public class XYChart {
 			newStart = currentStart.in(UnitLookup.EPOCH_NS).add(zoomDiff);
 			newEnd = currentEnd.in(UnitLookup.EPOCH_NS).subtract(zoomDiff);
 		}
-		setVisibleRange(newStart, newEnd);
 		currentZoom = currentZoom + (zoomPanPower * ZOOM_PAN_MODIFIER * 100);
+		isZoomCalculated = true;
+		setVisibleRange(newStart, newEnd);
 		zoomSteps++;
 	}
 
@@ -493,8 +493,12 @@ public class XYChart {
 			newStart = newStart.subtract(diff);
 			newEnd = end;
 		}
-		setVisibleRange(newStart, newEnd);
 		currentZoom = currentZoom - (zoomPanPower * ZOOM_PAN_MODIFIER * 100);
+		if (currentZoom < 100) {
+			currentZoom = 100;
+		}
+		isZoomCalculated = true;
+		setVisibleRange(newStart, newEnd);
 		zoomSteps--;
 	}
 
@@ -505,23 +509,64 @@ public class XYChart {
 		zoomPanPower = ZOOM_PAN_FACTOR / ZOOM_PAN_MODIFIER;
 		currentZoom = 100;
 		displayBar.setZoomPercentageText(currentZoom);
-		calculateZoom();
 		modifiedSteps = new Stack<Integer>();
 	}
 
-	// Reset the visible range to be the recording range, and reset the zoom-related objects
+	/**
+	 *  Reset the visible range to be the recording range, and reset the zoom-related objects
+	 */
 	public void resetTimeline() {
 		resetZoomFactor();
 		setVisibleRange(start, end);
 	}
 
-	// When a drag-select zoom occurs, use the new range value to determine how many steps have been taken,
-	// and adjust zoomSteps and zoomPower accordingly
-	private void calculateZoom() {
-		// do something
+	private void selectionZoom(IQuantity newStart, IQuantity newEnd) {
+		double percentage = calculateZoom(newStart, newEnd);
+		zoomSteps = calculateZoomSteps(percentage);
+		currentZoom = 100 + (percentage * 100);
+		displayBar.setScaleValue(zoomSteps);
+		displayBar.setZoomPercentageText(currentZoom);
+	}
+	
+	/**
+	 *  When a drag-select zoom occurs, use the new range value to determine how many steps have been taken,
+	 *  and adjust zoomSteps and zoomPower accordingly
+	 */
+	private double calculateZoom(IQuantity newStart, IQuantity newEnd) {
+		// calculate the new visible range, and it's percentage of the total range
+		IQuantity newRange = newEnd.in(UnitLookup.EPOCH_NS).subtract(newStart.in(UnitLookup.EPOCH_NS));
+		return 1 - (newRange.longValue() / (double) rangeDuration.in(UnitLookup.NANOSECOND).longValue());	
+	}
+
+	/**
+	 * Calculate the number of steps required to achieve the passed zoom percentage
+	 */
+	private int calculateZoomSteps(double percentage) {
+		double tempPercent = 0;
+		int steps = 0;
+		do {
+			tempPercent = tempPercent + ZOOM_PAN_FACTOR;
+			steps++;
+		} while (tempPercent <= percentage);
+		return steps;
+	}
+
+	private boolean isZoomCalculated;
+	private boolean isZoomPanDrag;
+
+	public void setIsZoomPanDrag(boolean isZoomPanDrag) {
+		this.isZoomPanDrag = isZoomPanDrag;
+	}
+
+	private boolean getIsZoomPanDrag() {
+		return isZoomPanDrag;
 	}
 
 	public void setVisibleRange(IQuantity rangeStart, IQuantity rangeEnd) {
+		if (rangeDuration != null && !isZoomCalculated && rangeStart != start && !isZoomPanDrag) {
+			selectionZoom(rangeStart, rangeEnd);
+		}
+		isZoomCalculated = false;
 		rangeStart = QuantitiesToolkit.max(rangeStart, start);
 		rangeEnd = QuantitiesToolkit.min(rangeEnd, end);
 		if (rangeStart.compareTo(rangeEnd) < 0) {

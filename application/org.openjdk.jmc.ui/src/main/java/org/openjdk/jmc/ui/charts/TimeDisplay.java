@@ -119,7 +119,7 @@ public class TimeDisplay extends Composite {
 		 * expected time format of HH:mm:ss:SSS
 		 * @return true if the text corresponds to a HH:mm:ss:SSS format
 		 */
-		private boolean isFormatValid() {
+		protected boolean isFormatValid() {
 			if (!timePattern.matcher(timeText.getText()).matches()) {
 				// not in HH:mm:ss:SSS format
 				return false;
