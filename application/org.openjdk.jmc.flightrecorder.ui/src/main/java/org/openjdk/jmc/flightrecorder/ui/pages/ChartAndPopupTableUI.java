@@ -44,6 +44,10 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.FormAttachment;
+import org.eclipse.swt.layout.FormData;
+import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -148,6 +152,9 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		 * Chart Container (1 column gridlayout) - Contains filter bar & graph container
 		 * Graph Container (2 column gridlayout) - Contains chart and timeline container & display bar
 		 * Chart and Timeline Container (1 column gridlayout) Contains chart and text container and timeline canvas
+		 * Zoom-pan and Chart Container (formlayout) - Contains chart and text container contents and zoom-pan overlay
+		 * Zoom-pan Container (filllayout) - Contains zoom-pan chart overlay
+		 * Full screen Chart Container (1 column gridlayout) - Contains chart container
 		 * Chart and Text Container (2 column gridlayout) - Contains scText and textCanvas) & scChart (and chart canvas)
 		 */
 		// Filter Controls
@@ -178,8 +185,33 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		chartAndTimelineContainer.setLayout(gridLayout);
 		chartAndTimelineContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
+		// Container to hold the chart and a zoom-pan overlay
+		Composite zoomPanAndChartContainer = toolkit.createComposite(chartAndTimelineContainer);
+		zoomPanAndChartContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		zoomPanAndChartContainer.setLayout(new FormLayout());
+
+		// Container to hold fixed zoom-pan display
+		Composite zoomPanContainer = toolkit.createComposite(zoomPanAndChartContainer);
+		zoomPanContainer.setLayout(new FillLayout());
+		FormData fd = new FormData();
+		fd.height = 80;
+		fd.width = 150;
+		fd.bottom = new FormAttachment(100, -12);
+		fd.right = new FormAttachment(100, -12);
+		zoomPanContainer.setLayoutData(fd);
+
+		// Container to hold the chart
+		Composite fullScreenChartContainer = toolkit.createComposite(zoomPanAndChartContainer);
+		fullScreenChartContainer.setLayout(new GridLayout(1,false));
+		fd = new FormData();
+		fd.right = new FormAttachment(100, -1);
+		fd.top = new FormAttachment(0, 1);
+		fd.left = new FormAttachment(0, 1);
+		fd.bottom = new FormAttachment(100, -1);
+		fullScreenChartContainer.setLayoutData(fd);
+
 		// Container to hold the text and chart canvases
-		Composite chartAndTextContainer = toolkit.createComposite(chartAndTimelineContainer);
+		Composite chartAndTextContainer = toolkit.createComposite(fullScreenChartContainer);
 		gridLayout = new GridLayout(2, false);
 		gridLayout.horizontalSpacing = 0;
 		gridLayout.marginWidth = 0;
@@ -242,6 +274,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		cdcb.setChartCanvas(chartCanvas);
 		cdcb.setTextCanvas(textCanvas);
 		cdcb.setChart(chart);
+		cdcb.createZoomPan(zoomPanContainer);
 		chartCanvas.setZoomToSelectionListener(() -> cdcb.zoomToSelection());
 		chartCanvas.setZoomOnClickListener(()-> cdcb.setZoomOnClickData());
 

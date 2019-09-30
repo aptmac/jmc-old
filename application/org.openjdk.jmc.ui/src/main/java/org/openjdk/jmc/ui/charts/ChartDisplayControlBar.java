@@ -10,10 +10,15 @@ import java.util.TimerTask;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Cursor;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -21,7 +26,9 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Scale;
 import org.eclipse.swt.widgets.Text;
 import org.openjdk.jmc.common.unit.IQuantity;
+import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.ui.UIPlugin;
+import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.misc.ChartCanvas;
 import org.openjdk.jmc.ui.misc.ChartTextCanvas;
 import org.openjdk.jmc.ui.misc.DisplayToolkit;
@@ -41,6 +48,8 @@ public class ChartDisplayControlBar extends Composite {
 	private Button zoomInBtn;
 	private Button zoomOutBtn;
 	private Button selectionBtn;
+	private Button zoomPanBtn;
+	private ZoomPan zoomPan;
 	int zoomValue = 0;
 
 	public void setChart(XYChart chart) {
@@ -53,6 +62,11 @@ public class ChartDisplayControlBar extends Composite {
 
 	public void setTextCanvas(ChartTextCanvas textCanvas) {
 		this.textCanvas = textCanvas;
+	}
+
+	public void createZoomPan(Composite parent) {
+		zoomPan = new ZoomPan(parent);
+		parent.setVisible(false);
 	}
 
 	public void setZoomOnClickData() {
@@ -101,7 +115,7 @@ public class ChartDisplayControlBar extends Composite {
 
 			@Override
 			public void handleEvent(Event event) {
-				setButtonSelectionStates(selectionBtn);
+				setButtonSelectionStates(selectionBtn, null);
 				changeCursor(DEFAULT_CURSOR);
 			};
 		});
@@ -116,10 +130,10 @@ public class ChartDisplayControlBar extends Composite {
 			@Override
 			public void handleEvent(Event event) {
 				if (scale.getSelection() > 0) {
-					setButtonSelectionStates(zoomInBtn);
+					setButtonSelectionStates(zoomInBtn, zoomPanBtn);
 					changeCursor(ZOOM_IN_CURSOR);
 				} else {
-					setButtonSelectionStates(selectionBtn);
+					setButtonSelectionStates(selectionBtn, null);
 					changeCursor(DEFAULT_CURSOR);
 				}
 			}
@@ -136,7 +150,7 @@ public class ChartDisplayControlBar extends Composite {
 		scale.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
-				setButtonSelectionStates(null);
+				setButtonSelectionStates(null, null);
 				changeCursor(DEFAULT_CURSOR);
 				zoomInOut(getZoomValueByScale() - zoomValue);
 			}
@@ -154,10 +168,10 @@ public class ChartDisplayControlBar extends Composite {
 			@Override
 			public void handleEvent(Event event) {
 				if (scale.getSelection() < scale.getMaximum()) {
-					setButtonSelectionStates(zoomOutBtn);
+					setButtonSelectionStates(zoomOutBtn, zoomPanBtn);
 					changeCursor(ZOOM_OUT_CURSOR);
 				} else {
-					setButtonSelectionStates(selectionBtn);
+					setButtonSelectionStates(selectionBtn, null);
 					changeCursor(DEFAULT_CURSOR);
 				}
 			}
@@ -167,33 +181,30 @@ public class ChartDisplayControlBar extends Composite {
 
 		// SPACE
 
-		Button movementBtn = new Button(this, SWT.TOGGLE);
-		movementBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_PAN));
-		movementBtn.setSelection(false);
-		movementBtn.addListener(SWT.Selection, new Listener() {
+		zoomPanBtn = new Button(this, SWT.TOGGLE);
+		zoomPanBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_PAN));
+		zoomPanBtn.setSelection(false);
+		zoomPanBtn.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				showZoomPanDisplay(zoomPanBtn.getSelection());
+			}
+		});
+		buttonGroup.add(zoomPanBtn);
+
+		Button scaleToFitBtn = new Button(this, SWT.PUSH);
+		scaleToFitBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_SCALE_TO_FIT));
+		scaleToFitBtn.setSelection(false);
+		scaleToFitBtn.addListener(SWT.Selection, new Listener() {
 
 			@Override
 			public void handleEvent(Event event) {
-				setButtonSelectionStates(movementBtn);
+				setButtonSelectionStates(scaleToFitBtn, null);
 				changeCursor(DEFAULT_CURSOR);
 			}
 
 		});
-		buttonGroup.add(movementBtn);
-
-		Button durationBtn = new Button(this, SWT.TOGGLE);
-		durationBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_SCALE_TO_FIT));
-		durationBtn.setSelection(false);
-		durationBtn.addListener(SWT.Selection, new Listener() {
-
-			@Override
-			public void handleEvent(Event event) {
-				setButtonSelectionStates(durationBtn);
-				changeCursor(DEFAULT_CURSOR);
-			}
-
-		});
-		buttonGroup.add(durationBtn);
+		buttonGroup.add(scaleToFitBtn);
 
 	}
 
@@ -201,15 +212,22 @@ public class ChartDisplayControlBar extends Composite {
 		chartCanvas.changeCursor(cursors.get(cursorName));
 	}
 
-	private void setButtonSelectionStates(Button buttonSelected) {
+	private void setButtonSelectionStates(Button buttonSelected, Button dependentButton) {
 		for (Button button : buttonGroup) {
 			if ((button.getStyle() & SWT.TOGGLE) != 0) {
 				if (button.equals(buttonSelected)) {
 					button.setSelection(true);
+				} else if (dependentButton != null ) {
+					if (button.equals(dependentButton)) {
+						button.setSelection(true);
+					} else {
+						button.setSelection(false);
+					}
 				} else {
 					button.setSelection(false);
 				}
 			}
+			showZoomPanDisplay(zoomPanBtn.getSelection());
 		}
 	}
 
@@ -265,6 +283,98 @@ public class ChartDisplayControlBar extends Composite {
 
 	private int getZoomValueByScale() {
 		return (scale.getMaximum() -  scale.getSelection())/scale.getIncrement();
+	}
+
+	private void showZoomPanDisplay(boolean show) {
+		if(show) {
+			zoomPan.getParent().setVisible(true);
+			zoomPan.redrawZoomPan();
+		} else {
+			zoomPan.getParent().setVisible(false);
+		}
+	}
+
+	private class ZoomPan extends Canvas  {
+		private IRange<IQuantity> chartRange;
+		private static final int BORDER_PADDING = 2;
+		private Rectangle zoomRect;
+
+		public ZoomPan(Composite parent) {
+			super(parent, SWT.NO_BACKGROUND);
+			addPaintListener(new Painter());
+			chartRange = chart.getVisibleRange();
+		}
+
+		public void redrawZoomPan() {
+			redraw();
+		}
+
+		class Painter implements PaintListener {
+			@Override
+			public void paintControl(PaintEvent e) {
+				Rectangle backgroundRect = new Rectangle(0, 0,
+						getParent().getSize().x, getParent().getSize().y);
+				GC gc = e.gc;
+
+				gc.setBackground(Palette.PF_BLACK_400.getSWTColor());
+				gc.fillRectangle(backgroundRect);
+				gc.setForeground(Palette.PF_BLACK_900.getSWTColor());
+				gc.drawRectangle(backgroundRect);
+
+				updateZoomPanBounds();
+
+				gc.setBackground(Palette.PF_BLACK_100.getSWTColor());
+				gc.fillRectangle(zoomRect);
+				gc.setForeground(Palette.PF_BLACK_900.getSWTColor());
+				gc.drawRectangle(zoomRect);
+			}
+		}
+
+		private void updateZoomPanBounds() {
+			Rectangle zoomCanvasBounds = new Rectangle(0, 0, getParent().getSize().x, getParent().getSize().y);
+			IRange<IQuantity> zoomedRange = chart.getVisibleRange();
+			IQuantity visibleWidth = chartRange.getExtent();
+			double visibleHeight =  chartCanvas.getParent().getBounds().height;
+			Rectangle totalBounds = chartCanvas.getBounds();
+
+			if (zoomRect == null ) {
+				zoomRect = new Rectangle(0, 0, 0, 0);
+			}
+
+			double ratio = getVisibilityRatio(zoomedRange.getStart(), chartRange.getStart(), visibleWidth);
+			int start = getPixelLocation(ratio, zoomCanvasBounds.width, 0);
+
+			ratio = getVisibilityRatio(zoomedRange.getEnd(), chartRange.getEnd(), visibleWidth);
+			int end = getPixelLocation(ratio, zoomCanvasBounds.width, zoomCanvasBounds.width);
+
+			zoomRect.x = start + BORDER_PADDING;
+			zoomRect.width = end - start - 2 * BORDER_PADDING;
+
+			ratio = getVisibilityRatio(0, totalBounds.y, totalBounds.height);
+			int top = getPixelLocation(ratio, zoomCanvasBounds.height, 0);
+
+			ratio = getVisibilityRatio(visibleHeight, totalBounds.height + totalBounds.y, totalBounds.height);
+			int bottom = getPixelLocation(ratio, zoomCanvasBounds.height, zoomCanvasBounds.height);
+
+			zoomRect.y  = top + BORDER_PADDING;
+			zoomRect.height = bottom - top - 2 * BORDER_PADDING;
+
+		}
+
+		private double getVisibilityRatio(double visibleBound, double borderBound, double totalLength) {
+			double diff = visibleBound - borderBound;
+			return diff/totalLength;
+		}
+
+		private double getVisibilityRatio(IQuantity visibleBound, IQuantity borderBound, IQuantity totalLength) {
+			IQuantity diff = visibleBound.subtract(borderBound);
+			return diff.ratioTo(totalLength);
+		}
+
+		private int getPixelLocation(double visibliyRatio, int totalLength, int offset) {
+			return offset + (int) (visibliyRatio * totalLength);
+		}
+
 	}
 
 	public void resetZoomScale() {
