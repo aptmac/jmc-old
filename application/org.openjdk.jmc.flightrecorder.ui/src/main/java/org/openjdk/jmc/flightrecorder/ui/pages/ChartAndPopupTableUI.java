@@ -276,7 +276,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		displayBar.setChart(chart);
 		displayBar.createZoomPan(zoomPanContainer);
 		chartCanvas.setZoomToSelectionListener(() -> displayBar.zoomToSelection());
-		chartCanvas.setZoomOnClickListener(()-> displayBar.setZoomOnClickData());
+		chartCanvas.setZoomOnClickListener(mouseDown -> displayBar.zoomOnClick(mouseDown));
 
 		if (chartState != null) {
 			final String legendSelection = chartState.getAttribute(SELECTED);
