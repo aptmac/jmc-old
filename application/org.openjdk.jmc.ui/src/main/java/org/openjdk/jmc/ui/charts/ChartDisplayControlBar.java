@@ -12,6 +12,7 @@ import org.eclipse.swt.custom.ScrolledComposite;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseMoveListener;
+import org.eclipse.swt.events.MouseWheelListener;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Cursor;
@@ -41,6 +42,7 @@ public class ChartDisplayControlBar extends Composite {
 	private static final String ZOOM_IN_CURSOR = "zoomInCursor";
 	private static final String ZOOM_OUT_CURSOR = "zoomOutCursor";
 	private static final String DEFAULT_CURSOR = "defaultCursor";
+	private static final String HAND_CURSOR = "handCursor";
 	private static final int ZOOM_AMOUNT = 1;
 	private Map< String, Cursor > cursors = new HashMap<> ();
 	private Scale scale;
@@ -107,6 +109,7 @@ public class ChartDisplayControlBar extends Composite {
 		this.setLayout(layout);
 
 		cursors.put(DEFAULT_CURSOR, Display.getCurrent().getSystemCursor(SWT.CURSOR_ARROW));
+		cursors.put(HAND_CURSOR, Display.getCurrent().getSystemCursor(SWT.CURSOR_HAND));
 		cursors.put(ZOOM_IN_CURSOR, new Cursor(getDisplay(),
 				UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_IN).getImageData(), 0, 0));
 		cursors.put(ZOOM_OUT_CURSOR, new Cursor(getDisplay(),
@@ -342,6 +345,7 @@ public class ChartDisplayControlBar extends Composite {
 			PanDetector panDetector = new PanDetector();
 			addMouseListener(panDetector);
 			addMouseMoveListener(panDetector);
+			addMouseWheelListener(panDetector);
 			chartRange = chart.getVisibleRange();
 		}
 
@@ -349,7 +353,7 @@ public class ChartDisplayControlBar extends Composite {
 			redraw();
 		}
 
-		private class PanDetector extends MouseAdapter implements MouseMoveListener {
+		private class PanDetector extends MouseAdapter implements MouseMoveListener, MouseWheelListener {
 			Point currentSelection;
 			Point lastSelection;
 			boolean isPan = false;
@@ -371,6 +375,7 @@ public class ChartDisplayControlBar extends Composite {
 
 			@Override
 			public void mouseMove(MouseEvent e) {
+				zoomPan.setCursor(cursors.get(HAND_CURSOR));
 				if (isPan && getParent().getSize().x >= e.x && getParent().getSize().y >= e.y ) {
 					lastSelection = currentSelection;
 					currentSelection = translateDisplayToImageCoordinates(e.x, e.y);
@@ -378,6 +383,11 @@ public class ChartDisplayControlBar extends Composite {
 					int ydiff = currentSelection.y - lastSelection.y;
 					updateZoomRectFromPan(xdiff, ydiff);
 				}
+			}
+
+			@Override
+			public void mouseScrolled(MouseEvent e) {
+				updateZoomRectFromPan(0, -e.count);
 			}
 		}
 
