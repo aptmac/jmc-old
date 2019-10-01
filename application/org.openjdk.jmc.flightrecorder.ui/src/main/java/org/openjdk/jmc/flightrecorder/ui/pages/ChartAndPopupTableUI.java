@@ -117,8 +117,8 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 	private Composite hiddenTableContainer;
 
 	private TimelineCanvas timelineCanvas;
-	public ChartFilterControlBar filterBar;
-	private ChartDisplayControlBar cdcb;
+	protected ChartFilterControlBar filterBar;
+	private ChartDisplayControlBar displayBar;
 
 	ChartAndPopupTableUI(IItemFilter pageFilter, StreamModel model, Composite parent, FormToolkit toolkit,
 			IPageContainer pageContainer, IState state, String sectionTitle, IItemFilter tableFilter, Image icon,
@@ -250,7 +250,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		timelineCanvas.setLayoutData(gridData);
 
 		// add the display bar to the right of the chart scrolled composite
-		cdcb = new ChartDisplayControlBar(graphContainer);
+		displayBar = new ChartDisplayControlBar(graphContainer);
 
 		allChartSeriesActions = initializeChartConfiguration(state);
 		IState chartState = state.getChild(CHART);
@@ -262,7 +262,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		PersistableSashForm.loadState(sash, state.getChild(SASH));
 		DataPageToolkit.createChartTimestampTooltip(chartCanvas);
 
-		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), X_OFFSET, timelineCanvas, filterBar);
+		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), X_OFFSET, timelineCanvas, filterBar, displayBar);
 		DataPageToolkit.setChart(chartCanvas, chart, pageContainer::showSelection);
 		DataPageToolkit.setChart(textCanvas, chart, pageContainer::showSelection);
 		SelectionStoreActionToolkit.addSelectionStoreRangeActions(pageContainer.getSelectionStore(), chart,
@@ -270,13 +270,13 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 				chartCanvas.getContextMenu());
 		buildChart();
 
-		// Temp: Pass the chart into the toolbars for information retrieval
-		cdcb.setChartCanvas(chartCanvas);
-		cdcb.setTextCanvas(textCanvas);
-		cdcb.setChart(chart);
-		cdcb.createZoomPan(zoomPanContainer);
-		chartCanvas.setZoomToSelectionListener(() -> cdcb.zoomToSelection());
-		chartCanvas.setZoomOnClickListener(()-> cdcb.setZoomOnClickData());
+		// Wire-up the chart & text canvases to the filter and display bars
+		displayBar.setChartCanvas(chartCanvas);
+		displayBar.setTextCanvas(textCanvas);
+		displayBar.setChart(chart);
+		displayBar.createZoomPan(zoomPanContainer);
+		chartCanvas.setZoomToSelectionListener(() -> displayBar.zoomToSelection());
+		chartCanvas.setZoomOnClickListener(()-> displayBar.setZoomOnClickData());
 
 		if (chartState != null) {
 			final String legendSelection = chartState.getAttribute(SELECTED);
@@ -317,7 +317,8 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 	private void onSetRange(Boolean useRange) {
 		IRange<IQuantity> range = useRange ? timeRange : pageContainer.getRecordingRange();
 		chart.setVisibleRange(range.getStart(), range.getEnd());
-		cdcb.resetZoomScale();
+		chart.resetZoomFactor();
+		displayBar.resetZoomScale();
 		buildChart();
 	}
 

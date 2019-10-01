@@ -31,8 +31,6 @@ public class ChartFilterControlBar extends Composite {
 
 		timeFilter = new TimeFilter(this, recordingRange, resetListener);
 		timeFilter.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
-
-		// Thread State Selection button current added in ThreadsPage
 	}
 
 	public void setChart(XYChart chart) {

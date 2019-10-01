@@ -417,9 +417,7 @@ public class ChartCanvas extends Canvas {
 		Selector selector = new Selector();
 		addMouseListener(selector);
 		addMouseMoveListener(selector);
-//		addMouseTrackListener(selector);
 		FocusTracker.enableFocusTracking(this);
-//		addListener(SWT.MouseVerticalWheel, new Zoomer());
 		addKeyListener(new KeyNavigator());
 		aaListener = new AntiAliasingListener();
 		UIPlugin.getDefault().getPreferenceStore().addPropertyChangeListener(aaListener);
@@ -427,9 +425,12 @@ public class ChartCanvas extends Canvas {
 		if (Environment.getOSType() == OSType.WINDOWS) {
 			addMouseTrackListener(new WheelStealingZoomer());
 		}
-		if (getParent() instanceof ScrolledComposite) {
+		if (getParent() instanceof ScrolledComposite) { // JFR Threads Page
 			((ScrolledComposite) getParent()).getVerticalBar()
 				.addListener(SWT.Selection, e -> vBarScroll());
+		} else {
+			addMouseTrackListener(selector);
+			addListener(SWT.MouseVerticalWheel, new Zoomer());
 		}
 	}
 
@@ -540,7 +541,9 @@ public class ChartCanvas extends Canvas {
 		}
 		if (!newRects.equals(highlightRects)) {
 			highlightRects = newRects;
-			textCanvas.syncHighlightedRectangles(highlightRects);
+			if (textCanvas != null) {
+				textCanvas.syncHighlightedRectangles(highlightRects);
+			}
 			redraw();
 		}
 	}
