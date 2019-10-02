@@ -37,6 +37,7 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.util.IPropertyChangeListener;
@@ -183,6 +184,9 @@ public class ChartCanvas extends Canvas {
 				highlightSelectionStart = new Point(selectionStartX, selectionStartY);
 				selectionStartX = -1;
 				selectionStartY = -1;
+				if (selectionIsClick) {
+					notifyZoomOnClickListener(e.button);
+				}
 				if (selectionListener != null) {
 					selectionListener.run();
 					if (zoomToSelectionListener != null && !selectionIsClick) {
@@ -405,11 +409,11 @@ public class ChartCanvas extends Canvas {
 	private boolean awtNeedsRedraw;
 	private Runnable selectionListener;
 	private Runnable zoomToSelectionListener;
+	private Consumer<Boolean> zoomOnClickListener;
 	private IPropertyChangeListener aaListener;
 	private XYChart awtChart;
 	private MCContextMenuManager chartMenu;
 	private ChartTextCanvas textCanvas;
-	private Runnable zoomOnClickListener;
 
 	public ChartCanvas(Composite parent) {
 		super(parent, SWT.NO_BACKGROUND);
@@ -620,10 +624,7 @@ public class ChartCanvas extends Canvas {
 				if (!awtChart.select(p.x, p.x, p.y, p.y, true)) {
 					awtChart.clearSelection();
 				}
-
-				if (zoomOnClickListener != null) {
-					zoomOnClickListener.run();
-				}
+				notifyZoomOnClickListener(SWT.MouseDown);
 			}
 			redrawChart();
 			redrawChartText();
@@ -659,8 +660,14 @@ public class ChartCanvas extends Canvas {
 		this.zoomToSelectionListener = zoomListener;
 	}
 
-	public void setZoomOnClickListener(Runnable clickListener) {
+	public void setZoomOnClickListener(Consumer<Boolean> clickListener) {
 		this.zoomOnClickListener = clickListener;
+	}
+
+	private void notifyZoomOnClickListener(Integer button) {
+		if (zoomOnClickListener != null) {
+			zoomOnClickListener.accept(button == SWT.MouseDown);
+		}
 	}
 
 	private void notifyListener() {

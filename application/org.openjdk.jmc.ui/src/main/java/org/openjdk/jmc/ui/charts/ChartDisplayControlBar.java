@@ -75,13 +75,16 @@ public class ChartDisplayControlBar extends Composite {
 		parent.setVisible(false);
 	}
 
-	public void setZoomOnClickData() {
+	public void zoomOnClick(Boolean mouseDown) {
 		boolean shouldZoom = zoomInBtn.getSelection() || zoomOutBtn.getSelection() ;
 		if (shouldZoom) {
-			int zoomAmount = zoomInBtn.getSelection() ? 1 : -1;
-			chart.clearSelection();
-			zoomInOut(zoomAmount);
-			textCanvas.redrawChartText();
+			if (mouseDown) {
+				chart.clearSelection();
+			} else {
+				int zoomAmount = zoomInBtn.getSelection() ? ZOOM_AMOUNT : -ZOOM_AMOUNT;
+				zoomInOut(zoomAmount);
+				textCanvas.redrawChartText();
+			}
 		}
 	}
 
@@ -93,7 +96,7 @@ public class ChartDisplayControlBar extends Composite {
 				chart.clearVisibleRange();
 			} else {
 				chart.setVisibleRange(selectionStart, selectionEnd);
-			chartCanvas.redrawChart();
+				chartCanvas.redrawChart();
 			}
 		}
 	}
