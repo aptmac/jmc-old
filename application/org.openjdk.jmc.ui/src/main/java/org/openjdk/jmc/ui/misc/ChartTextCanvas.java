@@ -228,12 +228,12 @@ public class ChartTextCanvas extends Canvas {
 
 			if (awtNeedsRedraw || !awtCanvas.hasImage(rect.width, rect.height)) {
 				Graphics2D g2d = awtCanvas.getGraphics(rect.width, rect.height);
-				g2d.setColor(Palette.PF_BLACK_100.getAWTColor());
-				g2d.fillRect(0, 0, rect.width, rect.height);
 				Point adjusted = translateDisplayToImageCoordinates(rect.width, rect.height);
+				g2d.setColor(Palette.PF_BLACK_100.getAWTColor());
+				g2d.fillRect(0, 0, adjusted.x, adjusted.y);
 				render(g2d, adjusted.x, adjusted.y);
 				if (getParent() instanceof ScrolledComposite) {
-					((ScrolledComposite) getParent()).setMinSize(adjusted.x, adjusted.y);
+					((ScrolledComposite) getParent()).setMinSize(rect.width, rect.height);
 				}
 				if (highlightRects != null) {
 					updateHighlightRects();
