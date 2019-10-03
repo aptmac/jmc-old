@@ -38,7 +38,7 @@ public class TimeFilter extends Composite {
 	public TimeFilter(Composite parent, IRange<IQuantity> recordingRange, Listener resetListener) {
 		super(parent, SWT.NO_BACKGROUND);
 		this.setLayout(new GridLayout(7, false));
-		Label eventsLabel = new Label(this, SWT.LEFT | SWT.HORIZONTAL);
+		Label eventsLabel = new Label(this, SWT.LEFT);
 		eventsLabel.setText(FILTER_EVENTS);
 		eventsLabel.setFont(JFaceResources.getFontRegistry().get(JFaceResources.BANNER_FONT));
 
