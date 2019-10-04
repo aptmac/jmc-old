@@ -6,15 +6,20 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.openjdk.jmc.ui.common.PatternFly.Palette;
+import org.openjdk.jmc.ui.common.util.Environment;
 import org.openjdk.jmc.ui.misc.AwtCanvas;
 
 public class TimelineCanvas extends Canvas {
 	private static final int RANGE_INDICATOR_HEIGHT = 7;
 	private static final int RANGE_INDICATOR_Y_OFFSET = 30;
+	private final double xScale = Display.getDefault().getDPI().x / Environment.getNormalDPI();
+	private final double yScale = Display.getDefault().getDPI().y / Environment.getNormalDPI();
 	private int xOffset;
 	private AwtCanvas awtCanvas;
 	private Graphics2D g2d;
@@ -56,8 +61,9 @@ public class TimelineCanvas extends Canvas {
 			g2d = awtCanvas.getGraphics(rect.width, rect.height);
 
 			// Draw the background
+			Point adjusted = translateDisplayToImageCoordinates(rect.width, rect.height);
 			g2d.setColor(Palette.PF_BLACK_100.getAWTColor());
-			g2d.fillRect(0, 0, rect.width, rect.height);
+			g2d.fillRect(0, 0, adjusted.x, adjusted.y);
 
 			// Draw the horizontal axis
 			if (xTickRange != null) {
@@ -69,9 +75,17 @@ public class TimelineCanvas extends Canvas {
 			g2d.setPaint(Palette.PF_ORANGE_400.getAWTColor());
 			g2d.fillRect(x1 + xOffset, RANGE_INDICATOR_Y_OFFSET, x2 - x1, RANGE_INDICATOR_HEIGHT);
 			g2d.setPaint(Palette.PF_BLACK_600.getAWTColor());
-			g2d.drawRect(xOffset, RANGE_INDICATOR_Y_OFFSET, sashForm.getChildren()[1].getSize().x, RANGE_INDICATOR_HEIGHT);
+			Point totalSize = sashForm.getChildren()[1].getSize();
+			adjusted = translateDisplayToImageCoordinates(totalSize.x,totalSize.y);
+			g2d.drawRect(xOffset, RANGE_INDICATOR_Y_OFFSET, adjusted.x, RANGE_INDICATOR_HEIGHT);
 			awtCanvas.paint(e, 0, 0);
 		}
+	}
+
+	private Point translateDisplayToImageCoordinates(int x, int y) {
+		int xImage = (int) Math.round(x / xScale);
+		int yImage = (int) Math.round(y / yScale);
+		return new Point(xImage, yImage);
 	}
 
 }

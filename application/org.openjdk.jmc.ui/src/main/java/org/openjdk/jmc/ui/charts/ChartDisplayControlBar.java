@@ -407,8 +407,8 @@ public class ChartDisplayControlBar extends Composite {
 
 			int xOld = zoomRect.x;
 			zoomRect.x += xdiff;
-			if (zoomRect.x > (bounds.x - zoomRect.width - BORDER_PADDING))  {
-				zoomRect.x = bounds.x - zoomRect.width - BORDER_PADDING;
+			if (zoomRect.x > (bounds.x - zoomRect.width - BORDER_PADDING - 1))  {
+				zoomRect.x = bounds.x - zoomRect.width - BORDER_PADDING - 1;
 			} else if (zoomRect.x < BORDER_PADDING ) {
 				zoomRect.x = BORDER_PADDING;
 			}
@@ -418,8 +418,8 @@ public class ChartDisplayControlBar extends Composite {
 			zoomRect.y += ydiff;
 			if (zoomRect.y < BORDER_PADDING ) {
 				zoomRect.y = BORDER_PADDING;
-			} else if (zoomRect.y > (bounds.y - zoomRect.height - BORDER_PADDING))  {
-				zoomRect.y = bounds.y - zoomRect.height - BORDER_PADDING;
+			} else if (zoomRect.y > (bounds.y - zoomRect.height- BORDER_PADDING - 1))  {
+				zoomRect.y = bounds.y - zoomRect.height - BORDER_PADDING - 1;
 			}
 			yModified = yOld != zoomRect.y;
 
@@ -438,7 +438,7 @@ public class ChartDisplayControlBar extends Composite {
 						zoomCanvasBounds.x, zoomCanvasBounds.width - BORDER_PADDING);
 				int start = getPixelLocation(ratio, totalBounds.width, 0);
 
-				ratio = getVisibilityRatio(zoomRect.x + zoomRect.width + BORDER_PADDING,
+				ratio = getVisibilityRatio(zoomRect.x + zoomRect.width + BORDER_PADDING + 1,
 						zoomCanvasBounds.width, zoomCanvasBounds.width - BORDER_PADDING);
 				int end = getPixelLocation(ratio, totalBounds.width, totalBounds.width);
 
@@ -448,7 +448,8 @@ public class ChartDisplayControlBar extends Composite {
 				lastChartZoomedRange = chart.getVisibleRange();
 			}
 			if (updateYRange) {
-				double ratio = getVisibilityRatio(zoomRect.y - BORDER_PADDING, 0, zoomCanvasBounds.height);
+				double ratio = getVisibilityRatio(zoomRect.y - BORDER_PADDING, 0,
+						zoomCanvasBounds.height - BORDER_PADDING);
 				int top = getPixelLocation(ratio, totalBounds.height, 0);
 
 				Point p = ((ScrolledComposite) chartCanvas.getParent()).getOrigin();
@@ -469,7 +470,7 @@ public class ChartDisplayControlBar extends Composite {
 				gc.setBackground(Palette.PF_BLACK_400.getSWTColor());
 				gc.fillRectangle(backgroundRect);
 				gc.setForeground(Palette.PF_BLACK_900.getSWTColor());
-				gc.drawRectangle(backgroundRect);
+				gc.drawRectangle(0, 0, backgroundRect.width - 1 , backgroundRect.height - 1);
 
 				updateZoomRectFromChart();
 
@@ -498,7 +499,7 @@ public class ChartDisplayControlBar extends Composite {
 				int end = getPixelLocation(ratio, zoomCanvasBounds.width, zoomCanvasBounds.width);
 
 				zoomRect.x = start + BORDER_PADDING;
-				zoomRect.width = end - start - 2 * BORDER_PADDING;
+				zoomRect.width = end - start - 2 * BORDER_PADDING - 1;
 				lastChartZoomedRange = chart.getVisibleRange();
 			}
 			double ratio = getVisibilityRatio(0, totalBounds.y, totalBounds.height);
@@ -508,7 +509,7 @@ public class ChartDisplayControlBar extends Composite {
 			int bottom = getPixelLocation(ratio, zoomCanvasBounds.height, zoomCanvasBounds.height);
 
 			zoomRect.y  = top + BORDER_PADDING;
-			zoomRect.height = bottom - top - 2 * BORDER_PADDING;
+			zoomRect.height = bottom - top - 2 * BORDER_PADDING - 1;
 
 		}
 
