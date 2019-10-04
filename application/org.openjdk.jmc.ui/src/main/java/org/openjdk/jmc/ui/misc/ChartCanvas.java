@@ -624,8 +624,8 @@ public class ChartCanvas extends Canvas {
 				if (!awtChart.select(p.x, p.x, p.y, p.y, true)) {
 					awtChart.clearSelection();
 				}
-				notifyZoomOnClickListener(SWT.MouseDown);
 			}
+			notifyZoomOnClickListener(SWT.MouseDown);
 			redrawChart();
 			redrawChartText();
 		}
