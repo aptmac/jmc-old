@@ -51,7 +51,6 @@ import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.forms.widgets.Form;
@@ -73,7 +72,6 @@ import org.openjdk.jmc.flightrecorder.ui.common.FilterComponent;
 import org.openjdk.jmc.flightrecorder.ui.common.FlavorSelector;
 import org.openjdk.jmc.flightrecorder.ui.common.FlavorSelector.FlavorSelectorState;
 import org.openjdk.jmc.flightrecorder.ui.common.ItemHistogram;
-import org.openjdk.jmc.flightrecorder.ui.common.ScrolledCompositeToolkit;
 import org.openjdk.jmc.flightrecorder.ui.common.ItemHistogram.HistogramSelection;
 import org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages;
 import org.openjdk.jmc.flightrecorder.ui.selection.SelectionStoreActionToolkit;
@@ -216,15 +214,14 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		toolkit.adapt(sash);
 
-		ScrolledCompositeToolkit sct = new ScrolledCompositeToolkit(Display.getCurrent());
-		ScrolledComposite scText = sct.createScrolledComposite(sash);
+		ScrolledComposite scText = new ScrolledComposite(sash, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
 		GridData scTextGd = new GridData(SWT.FILL, SWT.FILL, false, true);
 		scTextGd.widthHint = 180;
 		scText.setLayoutData(scTextGd);
 		textCanvas = new ChartTextCanvas(scText);
 		textCanvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
 
-		ScrolledComposite scChart = sct.createScrolledComposite(sash);
+		ScrolledComposite scChart = new ScrolledComposite(sash, SWT.BORDER | SWT.V_SCROLL);
 		scChart.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		chartCanvas = new ChartCanvas(scChart);
 		chartCanvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -241,7 +238,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		scText.setExpandHorizontal(true);
 		scText.setExpandVertical(true);
 
-		timelineCanvas = new TimelineCanvas(chartAndTimelineContainer, sash);
+		timelineCanvas = new TimelineCanvas(chartAndTimelineContainer, chartCanvas, sash);
 		GridData gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
 		gridData.heightHint = 40; // TODO: replace with constant
 		timelineCanvas.setLayoutData(gridData);
@@ -274,6 +271,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		displayBar.createZoomPan(zoomPanContainer);
 		chartCanvas.setZoomToSelectionListener(() -> displayBar.zoomToSelection());
 		chartCanvas.setZoomOnClickListener(mouseDown -> displayBar.zoomOnClick(mouseDown));
+		timelineCanvas.setChart(chart);
 
 		if (chartState != null) {
 			final String legendSelection = chartState.getAttribute(SELECTED);
