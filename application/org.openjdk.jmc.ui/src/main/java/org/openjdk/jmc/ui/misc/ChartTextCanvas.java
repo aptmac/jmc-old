@@ -146,7 +146,7 @@ public class ChartTextCanvas extends Canvas {
 						lastSelection = highlightSelectionEnd;
 					}
 				}
-				select(highlightSelectionStart.x, highlightSelectionEnd.x, highlightSelectionStart.y, highlightSelectionEnd.y, true);
+				select(highlightSelectionStart.x, highlightSelectionStart.x, highlightSelectionStart.y, highlightSelectionEnd.y, true);
 				if (selectionListener != null) {
 					selectionListener.run();
 				}
