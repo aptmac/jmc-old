@@ -404,6 +404,9 @@ public class ThreadsPage extends AbstractDataPage {
 
 				if (selectionInput != null) {
 					table.getManager().getViewer().setSelection(new StructuredSelection(selectionInput));
+				} else {
+					table.getManager().getViewer().setSelection(
+							new StructuredSelection((Object[]) table.getManager().getViewer().getInput()));
 				}
 
 				setControl(parent);
