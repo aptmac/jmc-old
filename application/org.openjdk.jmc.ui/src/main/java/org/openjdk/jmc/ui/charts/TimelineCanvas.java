@@ -137,7 +137,12 @@ public class TimelineCanvas extends Canvas {
 
 		@Override
 		public void mouseMove(MouseEvent e) {
-			if (isDrag || isDrag && timelineRect.contains(e.x, e.y)) {
+			if (timelineRect.contains(e.x, e.y)) {
+				setCursor(Display.getCurrent().getSystemCursor(SWT.CURSOR_HAND));
+			} else {
+				setCursor(Display.getCurrent().getSystemCursor(SWT.CURSOR_ARROW));
+			}
+			if (isDrag) {
 				lastSelection = currentSelection;
 				chart.setIsZoomPanDrag(true);
 				currentSelection = translateDisplayToImageCoordinates(e.x, e.y);
