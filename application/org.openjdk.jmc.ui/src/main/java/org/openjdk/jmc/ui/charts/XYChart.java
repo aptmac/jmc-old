@@ -205,7 +205,7 @@ public class XYChart {
 		// Attempt to make graphs so low they cover the axis show by drawing the full axis first ...
 		context.setPaint(Color.BLACK);
 		if (timelineCanvas != null) {
-			timelineCanvas.renderAxis(xTickRange);
+			timelineCanvas.setXTickRange(xTickRange);
 		} else {
 			AWTChartToolkit.drawAxis(context, xTickRange, axisHeight - 1, false, 1 - xOffset, false);
 		}

@@ -23,10 +23,10 @@ import org.openjdk.jmc.ui.misc.AwtCanvas;
 import org.openjdk.jmc.ui.misc.ChartCanvas;
 
 public class TimelineCanvas extends Canvas {
-	private static final int RANGE_INDICATOR_HEIGHT = 10;
-	private static final int RANGE_INDICATOR_Y_OFFSET = 25;
 	private final double xScale = Display.getDefault().getDPI().x / Environment.getNormalDPI();
 	private final double yScale = Display.getDefault().getDPI().y / Environment.getNormalDPI();
+	private static final int RANGE_INDICATOR_HEIGHT = 10;
+	private static final int RANGE_INDICATOR_Y_OFFSET = 25;
 	private int x1;
 	private int x2;
 	private int xOffset;
@@ -63,9 +63,8 @@ public class TimelineCanvas extends Canvas {
 		this.redraw();
 	}
 
-	public void renderAxis(SubdividedQuantityRange xTickRange) {
+	public void setXTickRange(SubdividedQuantityRange xTickRange) {
 		this.xTickRange = xTickRange;
-		this.redraw();
 	}
 
 	public void setChart(XYChart chart) {
@@ -94,13 +93,9 @@ public class TimelineCanvas extends Canvas {
 			}
 
 			// Draw the range indicator
-			if (dragRect != null) {
-				indicatorRect = dragRect;
-				dragRect = null;
-			} else {
-				indicatorRect = new Rectangle(x1 + xOffset, RANGE_INDICATOR_Y_OFFSET, x2 - x1, RANGE_INDICATOR_HEIGHT);
-			}
-
+			indicatorRect = dragRect != null ? dragRect : new Rectangle(x1 + xOffset, RANGE_INDICATOR_Y_OFFSET, x2 - x1, RANGE_INDICATOR_HEIGHT);
+			dragRect = null;
+			
 			g2d.setPaint(Palette.PF_ORANGE_400.getAWTColor());
 			g2d.fillRect(indicatorRect.x, indicatorRect.y, indicatorRect.width, indicatorRect.height);
 
