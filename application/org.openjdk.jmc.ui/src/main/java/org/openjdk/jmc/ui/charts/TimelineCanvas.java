@@ -45,7 +45,6 @@ public class TimelineCanvas extends Canvas {
 		super(parent, SWT.NONE);
 		this.chartCanvas = chartCanvas;
 		this.sashForm = sashForm;
-		xOffset = calculateXOffset();
 		awtCanvas = new AwtCanvas();
 		addPaintListener(new TimelineCanvasPainter());
 		DragDetector dragDetector = new DragDetector();
@@ -76,7 +75,7 @@ public class TimelineCanvas extends Canvas {
 
 		@Override
 		public void paintControl(PaintEvent e) {
-			xOffset = calculateXOffset();
+			xOffset = translateDisplayToImageXCoordinates(calculateXOffset());
 
 			Rectangle rect = getClientArea();
 			g2d = awtCanvas.getGraphics(rect.width, rect.height);
@@ -93,15 +92,18 @@ public class TimelineCanvas extends Canvas {
 			}
 
 			// Draw the range indicator
-			indicatorRect = dragRect != null ? dragRect : new Rectangle(x1 + xOffset, RANGE_INDICATOR_Y_OFFSET, x2 - x1, RANGE_INDICATOR_HEIGHT);
+			indicatorRect = dragRect != null ? dragRect : new Rectangle(
+					x1 + xOffset, translateDisplayToImageYCoordinates(RANGE_INDICATOR_Y_OFFSET),
+					x2 - x1, translateDisplayToImageYCoordinates(RANGE_INDICATOR_HEIGHT));
 			dragRect = null;
-			
 			g2d.setPaint(Palette.PF_ORANGE_400.getAWTColor());
 			g2d.fillRect(indicatorRect.x, indicatorRect.y, indicatorRect.width, indicatorRect.height);
 
 			Point totalSize = sashForm.getChildren()[1].getSize();
-			adjusted = translateDisplayToImageCoordinates(totalSize.x,totalSize.y);
-			timelineRect = new Rectangle(xOffset, RANGE_INDICATOR_Y_OFFSET, sashForm.getChildren()[1].getSize().x, RANGE_INDICATOR_HEIGHT);
+			adjusted = translateDisplayToImageCoordinates(totalSize.x, totalSize.y);
+			timelineRect = new Rectangle(
+					xOffset, translateDisplayToImageYCoordinates(RANGE_INDICATOR_Y_OFFSET),
+					adjusted.x, translateDisplayToImageYCoordinates(RANGE_INDICATOR_HEIGHT));
 			g2d.setPaint(Palette.PF_BLACK_600.getAWTColor());
 			g2d.drawRect(timelineRect.x, timelineRect.y, timelineRect.width, timelineRect.height);
 
@@ -109,10 +111,41 @@ public class TimelineCanvas extends Canvas {
 		}
 	}
 
+	/**
+	 * Translates display coordinates into image coordinates for the chart.
+	 *
+	 * @param x
+	 *            the provided x coordinate
+	 * @param y
+	 *            the provided y coordinate
+	 * @return a Point that represents the (x,y) coordinates in the chart's coordinate space
+	 */
 	private Point translateDisplayToImageCoordinates(int x, int y) {
 		int xImage = (int) Math.round(x / xScale);
 		int yImage = (int) Math.round(y / yScale);
 		return new Point(xImage, yImage);
+	}
+
+	/**
+	 * Translates a display x coordinate into an image x coordinate for the chart.
+	 *
+	 * @param x
+	 *            the provided display x coordinate
+	 * @return the x coordinate in the chart's coordinate space
+	 */
+	private int translateDisplayToImageXCoordinates(int x) {
+		return (int) Math.round(x / xScale);
+	}
+
+	/**
+	 * Translates a display x coordinate into an image x coordinate for the chart.
+	 *
+	 * @param x
+	 *            the provided display x coordinate
+	 * @return the x coordinate in the chart's coordinate space
+	 */
+	private int translateDisplayToImageYCoordinates(int y) {
+		return (int) Math.round(y / yScale);
 	}
 
 	private class DragDetector extends MouseAdapter implements MouseMoveListener {
@@ -123,9 +156,11 @@ public class TimelineCanvas extends Canvas {
 
 		@Override
 		public void mouseDown(MouseEvent e) {
+			e.x = translateDisplayToImageXCoordinates(e.x);
+			e.y = translateDisplayToImageYCoordinates(e.y);
 			if (isDrag || e.button == 1 && timelineRect.contains(e.x, e.y)) {
 				isDrag = true;
-				currentSelection = translateDisplayToImageCoordinates(e.x, e.y);
+				currentSelection = new Point(e.x, e.y);
 			}
 		}
 
@@ -137,6 +172,8 @@ public class TimelineCanvas extends Canvas {
 
 		@Override
 		public void mouseMove(MouseEvent e) {
+			e.x = translateDisplayToImageXCoordinates(e.x);
+			e.y = translateDisplayToImageYCoordinates(e.y);
 			if (timelineRect.contains(e.x, e.y)) {
 				setCursor(Display.getCurrent().getSystemCursor(SWT.CURSOR_HAND));
 			} else {
@@ -145,7 +182,7 @@ public class TimelineCanvas extends Canvas {
 			if (isDrag) {
 				lastSelection = currentSelection;
 				chart.setIsZoomPanDrag(true);
-				currentSelection = translateDisplayToImageCoordinates(e.x, e.y);
+				currentSelection = new Point(e.x, e.y);
 				int xdiff = currentSelection.x - lastSelection.x;
 				updateTimelineIndicatorFromDrag(xdiff);
 			}
@@ -164,5 +201,4 @@ public class TimelineCanvas extends Canvas {
 			}
 		}
 	}
-
 }
