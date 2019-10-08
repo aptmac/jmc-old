@@ -45,11 +45,13 @@ import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Item;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.openjdk.jmc.common.IMCThread;
 import org.openjdk.jmc.common.IState;
@@ -397,7 +399,6 @@ public class ThreadsPage extends AbstractDataPage {
 						pageContainer.getSelectionStore()::getSelections, this::onFilterChangeHelper);
 				mm.add(tableFilterComponent.getShowFilterAction());
 				mm.add(tableFilterComponent.getShowSearchAction());
-
 				table.getManager().setSelectionState(histogramSelectionState);
 				tableFilterComponent.loadState(state.getChild(THREADS_TABLE_FILTER));
 				onFilterChange(tableFilter);
@@ -406,7 +407,18 @@ public class ThreadsPage extends AbstractDataPage {
 					table.getManager().getViewer().setSelection(new StructuredSelection(selectionInput));
 				}
 
+				Item[] columnWidgets = ((TableViewer) table.getManager().getViewer()).getTable().getColumns();
+				for (Item columWidget : columnWidgets) {
+					columWidget.addListener(SWT.Selection, e -> columnSortChanged());
+				}
+
 				setControl(parent);
+			}
+
+			private void columnSortChanged() {
+				if (!table.getSelection().getItems().hasItems()) {
+					buildChart();
+				}
 			}
 
 			private void onFilterChangeHelper(IItemFilter filter) {
