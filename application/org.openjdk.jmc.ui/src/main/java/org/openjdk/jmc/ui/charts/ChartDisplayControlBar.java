@@ -523,8 +523,8 @@ public class ChartDisplayControlBar extends Composite {
 			return diff.ratioTo(totalLength);
 		}
 
-		private int getPixelLocation(double visibliyRatio, int totalLength, int offset) {
-			return offset + (int) (visibliyRatio * totalLength);
+		private int getPixelLocation(double visiblityRatio, int totalLength, int offset) {
+			return offset + (int) (visiblityRatio * totalLength);
 		}
 
 	}
