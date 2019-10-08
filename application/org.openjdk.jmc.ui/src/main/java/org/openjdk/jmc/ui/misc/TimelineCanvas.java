@@ -1,4 +1,4 @@
-package org.openjdk.jmc.ui.charts;
+package org.openjdk.jmc.ui.misc;
 
 import java.awt.Graphics2D;
 
@@ -17,14 +17,12 @@ import org.eclipse.swt.widgets.Display;
 
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
+import org.openjdk.jmc.ui.charts.AWTChartToolkit;
+import org.openjdk.jmc.ui.charts.SubdividedQuantityRange;
+import org.openjdk.jmc.ui.charts.XYChart;
 import org.openjdk.jmc.ui.common.PatternFly.Palette;
-import org.openjdk.jmc.ui.common.util.Environment;
-import org.openjdk.jmc.ui.misc.AwtCanvas;
-import org.openjdk.jmc.ui.misc.ChartCanvas;
 
 public class TimelineCanvas extends Canvas {
-	private final double xScale = Display.getDefault().getDPI().x / Environment.getNormalDPI();
-	private final double yScale = Display.getDefault().getDPI().y / Environment.getNormalDPI();
 	private static final int RANGE_INDICATOR_HEIGHT = 10;
 	private static final int RANGE_INDICATOR_Y_OFFSET = 25;
 	private int x1;
@@ -75,13 +73,13 @@ public class TimelineCanvas extends Canvas {
 
 		@Override
 		public void paintControl(PaintEvent e) {
-			xOffset = translateDisplayToImageXCoordinates(calculateXOffset());
+			xOffset = chartCanvas.translateDisplayToImageXCoordinates(calculateXOffset());
 
 			Rectangle rect = getClientArea();
 			g2d = awtCanvas.getGraphics(rect.width, rect.height);
 
 			// Draw the background
-			Point adjusted = translateDisplayToImageCoordinates(rect.width, rect.height);
+			Point adjusted = chartCanvas.translateDisplayToImageCoordinates(rect.width, rect.height);
 			g2d.setColor(Palette.PF_BLACK_100.getAWTColor());
 			g2d.fillRect(0, 0, adjusted.x, adjusted.y);
 
@@ -93,59 +91,22 @@ public class TimelineCanvas extends Canvas {
 
 			// Draw the range indicator
 			indicatorRect = dragRect != null ? dragRect : new Rectangle(
-					x1 + xOffset, translateDisplayToImageYCoordinates(RANGE_INDICATOR_Y_OFFSET),
-					x2 - x1, translateDisplayToImageYCoordinates(RANGE_INDICATOR_HEIGHT));
+					x1 + xOffset, chartCanvas.translateDisplayToImageYCoordinates(RANGE_INDICATOR_Y_OFFSET),
+					x2 - x1, chartCanvas.translateDisplayToImageYCoordinates(RANGE_INDICATOR_HEIGHT));
 			dragRect = null;
 			g2d.setPaint(Palette.PF_ORANGE_400.getAWTColor());
 			g2d.fillRect(indicatorRect.x, indicatorRect.y, indicatorRect.width, indicatorRect.height);
 
 			Point totalSize = sashForm.getChildren()[1].getSize();
-			adjusted = translateDisplayToImageCoordinates(totalSize.x, totalSize.y);
+			adjusted = chartCanvas.translateDisplayToImageCoordinates(totalSize.x, totalSize.y);
 			timelineRect = new Rectangle(
-					xOffset, translateDisplayToImageYCoordinates(RANGE_INDICATOR_Y_OFFSET),
-					adjusted.x, translateDisplayToImageYCoordinates(RANGE_INDICATOR_HEIGHT));
+					xOffset, chartCanvas.translateDisplayToImageYCoordinates(RANGE_INDICATOR_Y_OFFSET),
+					adjusted.x, chartCanvas.translateDisplayToImageYCoordinates(RANGE_INDICATOR_HEIGHT));
 			g2d.setPaint(Palette.PF_BLACK_600.getAWTColor());
 			g2d.drawRect(timelineRect.x, timelineRect.y, timelineRect.width, timelineRect.height);
 
 			awtCanvas.paint(e, 0, 0);
 		}
-	}
-
-	/**
-	 * Translates display coordinates into image coordinates for the chart.
-	 *
-	 * @param x
-	 *            the provided x coordinate
-	 * @param y
-	 *            the provided y coordinate
-	 * @return a Point that represents the (x,y) coordinates in the chart's coordinate space
-	 */
-	private Point translateDisplayToImageCoordinates(int x, int y) {
-		int xImage = (int) Math.round(x / xScale);
-		int yImage = (int) Math.round(y / yScale);
-		return new Point(xImage, yImage);
-	}
-
-	/**
-	 * Translates a display x coordinate into an image x coordinate for the chart.
-	 *
-	 * @param x
-	 *            the provided display x coordinate
-	 * @return the x coordinate in the chart's coordinate space
-	 */
-	private int translateDisplayToImageXCoordinates(int x) {
-		return (int) Math.round(x / xScale);
-	}
-
-	/**
-	 * Translates a display x coordinate into an image x coordinate for the chart.
-	 *
-	 * @param x
-	 *            the provided display x coordinate
-	 * @return the x coordinate in the chart's coordinate space
-	 */
-	private int translateDisplayToImageYCoordinates(int y) {
-		return (int) Math.round(y / yScale);
 	}
 
 	private class DragDetector extends MouseAdapter implements MouseMoveListener {
@@ -156,8 +117,8 @@ public class TimelineCanvas extends Canvas {
 
 		@Override
 		public void mouseDown(MouseEvent e) {
-			e.x = translateDisplayToImageXCoordinates(e.x);
-			e.y = translateDisplayToImageYCoordinates(e.y);
+			e.x = chartCanvas.translateDisplayToImageXCoordinates(e.x);
+			e.y = chartCanvas.translateDisplayToImageYCoordinates(e.y);
 			if (isDrag || e.button == 1 && timelineRect.contains(e.x, e.y)) {
 				isDrag = true;
 				currentSelection = new Point(e.x, e.y);
@@ -172,8 +133,8 @@ public class TimelineCanvas extends Canvas {
 
 		@Override
 		public void mouseMove(MouseEvent e) {
-			e.x = translateDisplayToImageXCoordinates(e.x);
-			e.y = translateDisplayToImageYCoordinates(e.y);
+			e.x = chartCanvas.translateDisplayToImageXCoordinates(e.x);
+			e.y = chartCanvas.translateDisplayToImageYCoordinates(e.y);
 			if (timelineRect.contains(e.x, e.y)) {
 				setCursor(Display.getCurrent().getSystemCursor(SWT.CURSOR_HAND));
 			} else {

@@ -1,4 +1,4 @@
-package org.openjdk.jmc.ui.charts;
+package org.openjdk.jmc.ui.misc;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,11 +32,10 @@ import org.eclipse.swt.widgets.Text;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.ui.UIPlugin;
+import org.openjdk.jmc.ui.charts.SubdividedQuantityRange;
+import org.openjdk.jmc.ui.charts.XYChart;
 import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.common.util.Environment;
-import org.openjdk.jmc.ui.misc.ChartCanvas;
-import org.openjdk.jmc.ui.misc.ChartTextCanvas;
-import org.openjdk.jmc.ui.misc.DisplayToolkit;
 
 public class ChartDisplayControlBar extends Composite {
 	private static final String ZOOM_IN_CURSOR = "zoomInCursor";
@@ -341,9 +340,6 @@ public class ChartDisplayControlBar extends Composite {
 		private IRange<IQuantity> lastChartZoomedRange;
 		private Rectangle zoomRect;
 
-		private final double xScale = Display.getDefault().getDPI().x / Environment.getNormalDPI();
-		private final double yScale = Display.getDefault().getDPI().y / Environment.getNormalDPI();
-
 		public ZoomPan(Composite parent) {
 			super(parent, SWT.NO_BACKGROUND);
 			addPaintListener(new Painter());
@@ -368,7 +364,7 @@ public class ChartDisplayControlBar extends Composite {
 				if (e.button == 1 && zoomRect.contains(e.x, e.y)) {
 					isPan = true;
 					chart.setIsZoomPanDrag(isPan);
-					currentSelection = translateDisplayToImageCoordinates(e.x, e.y);
+					currentSelection = chartCanvas.translateDisplayToImageCoordinates(e.x, e.y);
 				}
 			}
 
@@ -383,7 +379,7 @@ public class ChartDisplayControlBar extends Composite {
 				zoomPan.setCursor(cursors.get(HAND_CURSOR));
 				if (isPan && getParent().getSize().x >= e.x && getParent().getSize().y >= e.y ) {
 					lastSelection = currentSelection;
-					currentSelection = translateDisplayToImageCoordinates(e.x, e.y);
+					currentSelection = chartCanvas.translateDisplayToImageCoordinates(e.x, e.y);
 					int xdiff = currentSelection.x - lastSelection.x;
 					int ydiff = currentSelection.y - lastSelection.y;
 					updateZoomRectFromPan(xdiff, ydiff);
@@ -394,12 +390,6 @@ public class ChartDisplayControlBar extends Composite {
 			public void mouseScrolled(MouseEvent e) {
 				updateZoomRectFromPan(0, -e.count);
 			}
-		}
-
-		private Point translateDisplayToImageCoordinates(int x, int y) {
-			int xImage = (int) Math.round(x / xScale);
-			int yImage = (int) Math.round(y / yScale);
-			return new Point(xImage, yImage);
 		}
 
 		private void updateZoomRectFromPan(int xdiff, int ydiff) {
