@@ -34,8 +34,8 @@ import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.ui.UIPlugin;
 import org.openjdk.jmc.ui.charts.SubdividedQuantityRange;
 import org.openjdk.jmc.ui.charts.XYChart;
-import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.common.util.Environment;
+import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class ChartDisplayControlBar extends Composite {
 	private static final String ZOOM_IN_CURSOR = "zoomInCursor";

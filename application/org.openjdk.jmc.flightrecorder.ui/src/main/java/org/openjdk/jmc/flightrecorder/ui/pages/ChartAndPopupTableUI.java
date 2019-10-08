@@ -79,7 +79,6 @@ import org.openjdk.jmc.ui.charts.ChartFilterControlBar;
 import org.openjdk.jmc.ui.charts.IXDataRenderer;
 import org.openjdk.jmc.ui.charts.RendererToolkit;
 import org.openjdk.jmc.ui.charts.XYChart;
-import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.handlers.ActionToolkit;
 import org.openjdk.jmc.ui.misc.ActionUiToolkit;
 import org.openjdk.jmc.ui.misc.ChartCanvas;
@@ -87,6 +86,7 @@ import org.openjdk.jmc.ui.misc.ChartDisplayControlBar;
 import org.openjdk.jmc.ui.misc.ChartTextCanvas;
 import org.openjdk.jmc.ui.misc.PersistableSashForm;
 import org.openjdk.jmc.ui.misc.TimelineCanvas;
+import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 abstract class ChartAndPopupTableUI implements IPageUI {
 

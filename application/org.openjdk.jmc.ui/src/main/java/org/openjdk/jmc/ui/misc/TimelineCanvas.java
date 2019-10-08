@@ -20,7 +20,7 @@ import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.ui.charts.AWTChartToolkit;
 import org.openjdk.jmc.ui.charts.SubdividedQuantityRange;
 import org.openjdk.jmc.ui.charts.XYChart;
-import org.openjdk.jmc.ui.common.PatternFly.Palette;
+import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class TimelineCanvas extends Canvas {
 	private static final int RANGE_INDICATOR_HEIGHT = 10;

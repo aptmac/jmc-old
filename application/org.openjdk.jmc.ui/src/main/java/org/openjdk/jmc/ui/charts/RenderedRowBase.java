@@ -89,4 +89,5 @@ public class RenderedRowBase implements IRenderedRow {
 	public void infoAt(IChartInfoVisitor visitor, int x, int y, Point offset) {
 
 	}
+
 }

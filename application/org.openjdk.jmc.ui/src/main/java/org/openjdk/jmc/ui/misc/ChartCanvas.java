@@ -71,10 +71,10 @@ import org.openjdk.jmc.ui.accessibility.FocusTracker;
 import org.openjdk.jmc.ui.charts.IChartInfoVisitor;
 import org.openjdk.jmc.ui.charts.IXDataRenderer;
 import org.openjdk.jmc.ui.charts.XYChart;
-import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.common.util.Environment;
 import org.openjdk.jmc.ui.common.util.Environment.OSType;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
+import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class ChartCanvas extends Canvas {
 	private static int MIN_LANE_HEIGHT = 50;

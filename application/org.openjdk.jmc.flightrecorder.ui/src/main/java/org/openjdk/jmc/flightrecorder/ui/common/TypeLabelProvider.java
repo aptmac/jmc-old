@@ -36,7 +36,6 @@ import java.awt.Color;
 
 import org.openjdk.jmc.common.util.ColorToolkit;
 import org.openjdk.jmc.flightrecorder.jdk.JdkTypeIDs;
-import org.openjdk.jmc.ui.common.PatternFly.Palette;
 
 // May evolve into a label provider
 public class TypeLabelProvider {
