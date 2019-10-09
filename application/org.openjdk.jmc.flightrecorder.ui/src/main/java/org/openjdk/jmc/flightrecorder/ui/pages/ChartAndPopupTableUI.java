@@ -33,12 +33,6 @@
  */
 package org.openjdk.jmc.flightrecorder.ui.pages;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.viewers.CheckboxTableViewer;
-import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
@@ -54,26 +48,21 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
-import org.eclipse.ui.forms.widgets.Form;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 
 import org.openjdk.jmc.common.IState;
-import org.openjdk.jmc.common.IWritableState;
-import org.openjdk.jmc.common.item.IAttribute;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.flightrecorder.JfrAttributes;
 import org.openjdk.jmc.flightrecorder.ui.IPageContainer;
-import org.openjdk.jmc.flightrecorder.ui.IPageUI;
 import org.openjdk.jmc.flightrecorder.ui.StreamModel;
 import org.openjdk.jmc.flightrecorder.ui.common.DataPageToolkit;
 import org.openjdk.jmc.flightrecorder.ui.common.FilterComponent;
 import org.openjdk.jmc.flightrecorder.ui.common.FlavorSelector;
 import org.openjdk.jmc.flightrecorder.ui.common.FlavorSelector.FlavorSelectorState;
 import org.openjdk.jmc.flightrecorder.ui.common.ItemHistogram;
-import org.openjdk.jmc.flightrecorder.ui.common.ItemHistogram.HistogramSelection;
 import org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages;
 import org.openjdk.jmc.flightrecorder.ui.selection.SelectionStoreActionToolkit;
 import org.openjdk.jmc.ui.charts.ChartFilterControlBar;
@@ -87,40 +76,33 @@ import org.openjdk.jmc.ui.misc.ChartDisplayControlBar;
 import org.openjdk.jmc.ui.misc.ChartTextCanvas;
 import org.openjdk.jmc.ui.misc.PersistableSashForm;
 import org.openjdk.jmc.ui.misc.TimelineCanvas;
-import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
-abstract class ChartAndPopupTableUI implements IPageUI {
+abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 
 	private static final String SASH = "sash"; //$NON-NLS-1$
 	private static final String TABLE = "table"; //$NON-NLS-1$
 	private static final String CHART = "chart"; //$NON-NLS-1$
 	private static final String SELECTED = "selected"; //$NON-NLS-1$
+	private static final int TIMELINE_HEIGHT = 40;
 	private static final int X_OFFSET = 0;
-	private static final int Y_OFFSET = 0;
-	private final IItemFilter pageFilter;
-	protected final StreamModel model;
-	protected CheckboxTableViewer chartLegend;
-	protected final Form form;
-	protected final Composite chartContainer;
-	protected final ChartCanvas chartCanvas;
-	protected final ChartTextCanvas textCanvas;
-	protected FilterComponent tableFilterComponent;
-	protected ItemHistogram table;
-	protected ItemHistogram hiddenTable;
-	protected final SashForm sash;
-	protected final IPageContainer pageContainer;
-	protected List<IAction> allChartSeriesActions;
-	private IItemCollection selectionItems;
-	private IRange<IQuantity> timeRange;
-	protected XYChart chart;
-	protected FlavorSelector flavorSelector;
-	private Composite hiddenTableContainer;
-
-	private TimelineCanvas timelineCanvas;
 	protected ChartFilterControlBar filterBar;
+	protected ChartTextCanvas textCanvas;
+	protected ItemHistogram hiddenTable;
+	protected IPageContainer pageContainer;
 	private ChartDisplayControlBar displayBar;
+	private Composite hiddenTableContainer;
+	private IItemCollection selectionItems;
+	private IItemFilter pageFilter;
+	private IRange<IQuantity> timeRange;
+	private TimelineCanvas timelineCanvas;
 
 	ChartAndPopupTableUI(IItemFilter pageFilter, StreamModel model, Composite parent, FormToolkit toolkit,
+			IPageContainer pageContainer, IState state, String sectionTitle, IItemFilter tableFilter, Image icon,
+			FlavorSelectorState flavorSelectorState) {
+		super(pageFilter, model, parent, toolkit, pageContainer, state, sectionTitle, tableFilter, icon, flavorSelectorState);
+	}
+
+	protected void init(IItemFilter pageFilter, StreamModel model, Composite parent, FormToolkit toolkit,
 			IPageContainer pageContainer, IState state, String sectionTitle, IItemFilter tableFilter, Image icon,
 			FlavorSelectorState flavorSelectorState) {
 		this.pageFilter = pageFilter;
@@ -132,7 +114,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		hiddenTableContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		hiddenTableContainer.setVisible(false);
 
-		hiddenTable = buildHistogram(hiddenTableContainer,state.getChild(TABLE));
+		hiddenTable = buildHistogram(hiddenTableContainer, state.getChild(TABLE));
 		hiddenTable.getManager().getViewer().addSelectionChangedListener(e -> buildChart());
 
 		tableFilterComponent = FilterComponent.createFilterComponent(hiddenTable.getManager().getViewer().getControl(),
@@ -241,7 +223,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 
 		timelineCanvas = new TimelineCanvas(chartAndTimelineContainer, chartCanvas, sash);
 		GridData gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-		gridData.heightHint = 40; // TODO: replace with constant
+		gridData.heightHint = TIMELINE_HEIGHT;
 		timelineCanvas.setLayoutData(gridData);
 
 		// add the display bar to the right of the chart scrolled composite
@@ -257,7 +239,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		PersistableSashForm.loadState(sash, state.getChild(SASH));
 		DataPageToolkit.createChartTimestampTooltip(chartCanvas);
 
-		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), X_OFFSET, Y_OFFSET, timelineCanvas, filterBar, displayBar);
+		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), X_OFFSET, timelineCanvas, filterBar, displayBar);
 		DataPageToolkit.setChart(chartCanvas, chart, pageContainer::showSelection);
 		DataPageToolkit.setChart(textCanvas, chart, pageContainer::showSelection);
 		SelectionStoreActionToolkit.addSelectionStoreRangeActions(pageContainer.getSelectionStore(), chart,
@@ -266,12 +248,12 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		buildChart();
 
 		// Wire-up the chart & text canvases to the filter and display bars
+		displayBar.setChart(chart);
 		displayBar.setChartCanvas(chartCanvas);
 		displayBar.setTextCanvas(textCanvas);
-		displayBar.setChart(chart);
 		displayBar.createZoomPan(zoomPanContainer);
-		chartCanvas.setZoomToSelectionListener(() -> displayBar.zoomToSelection());
 		chartCanvas.setZoomOnClickListener(mouseDown -> displayBar.zoomOnClick(mouseDown));
+		chartCanvas.setZoomToSelectionListener(() -> displayBar.zoomToSelection());
 		timelineCanvas.setChart(chart);
 
 		if (chartState != null) {
@@ -292,21 +274,8 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		if (tableFilterComponent.isVisible()) {
 			table.show(items.apply(filter));
 			tableFilterComponent.setColor(table.getAllRows().getRowCount());
-		} else if (table != null){
+		} else if (table != null) {
 			table.show(items);
-		}
-	}
-
-	@Override
-	public void saveTo(IWritableState writableState) {
-		PersistableSashForm.saveState(sash, writableState.createChild(SASH));
-		getUndisposedTable().getManager().getSettings().saveState(writableState.createChild(TABLE));
-		IWritableState chartState = writableState.createChild(CHART);
-
-		ActionToolkit.saveCheckState(chartState, allChartSeriesActions.stream());
-		Object legendSelection = ((IStructuredSelection) chartLegend.getSelection()).getFirstElement();
-		if (legendSelection != null) {
-			chartState.putString(SELECTED, ((IAction) legendSelection).getId());
 		}
 	}
 
@@ -316,10 +285,6 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		chart.resetZoomFactor();
 		displayBar.resetZoomScale();
 		buildChart();
-	}
-
-	public void setTimeRange(IRange<IQuantity> range) {
-		this.timeRange = range;
 	}
 
 	private void onFlavorSelected(IItemCollection items, IRange<IQuantity> timeRange) {
@@ -336,14 +301,6 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		}
 	}
 
-	protected ItemHistogram getUndisposedTable() {
-		return isDisposed(table) ? hiddenTable : table;
-	}
-
-	private boolean isDisposed(ItemHistogram histogram) {
-		return histogram == null ? true : histogram.getManager().getViewer().getControl().isDisposed();
-	}
-
 	protected void buildChart() {
 		IXDataRenderer rendererRoot = getChartRenderer(getItems(), getUndisposedTable().getSelection());
 		chartCanvas.replaceRenderer(rendererRoot);
@@ -354,16 +311,15 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		return selectionItems != null ? selectionItems.apply(pageFilter) : model.getItems().apply(pageFilter);
 	}
 
-	protected boolean isAttributeEnabled(IAttribute<IQuantity> attr) {
-		Optional<IAction> action = allChartSeriesActions.stream().filter(a -> attr.getIdentifier().equals(a.getId()))
-				.findAny();
-		return action.isPresent() && action.get().isChecked();
+	public void setTimeRange(IRange<IQuantity> range) {
+		this.timeRange = range;
 	}
 
-	protected abstract ItemHistogram buildHistogram(Composite parent, IState state);
-
-	protected abstract IXDataRenderer getChartRenderer(IItemCollection itemsInTable, HistogramSelection selection);
-
-	protected abstract List<IAction> initializeChartConfiguration(IState state);
-
+	protected ItemHistogram getUndisposedTable() {
+		return isDisposed(table) ? hiddenTable : table;
 	}
+
+	private boolean isDisposed(ItemHistogram histogram) {
+		return histogram == null ? true : histogram.getManager().getViewer().getControl().isDisposed();
+	}
+}

@@ -44,6 +44,7 @@ import org.eclipse.swt.widgets.Listener;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.ui.misc.ChartCanvas;
+import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 import org.openjdk.jmc.ui.misc.TimeFilter;
 
 public class ChartFilterControlBar extends Composite {
