@@ -83,7 +83,9 @@ public class ChartDisplayControlBar extends Composite {
 			} else {
 				int zoomAmount = zoomInBtn.getSelection() ? ZOOM_AMOUNT : -ZOOM_AMOUNT;
 				zoomInOut(zoomAmount);
-				textCanvas.redrawChartText();
+				if (textCanvas != null) {
+					textCanvas.redrawChartText();
+				}
 			}
 		}
 	}
@@ -455,8 +457,10 @@ public class ChartDisplayControlBar extends Composite {
 				Point p = ((ScrolledComposite) chartCanvas.getParent()).getOrigin();
 				p.y = top;
 
+				if (textCanvas != null) {
+					textCanvas.syncScroll(p);
+				}
 				chartCanvas.syncScroll(p);
-				textCanvas.syncScroll(p);
 			}
 		}
 
