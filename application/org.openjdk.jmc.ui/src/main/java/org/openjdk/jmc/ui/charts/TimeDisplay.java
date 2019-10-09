@@ -13,7 +13,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Text;
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.UnitLookup;
-import org.openjdk.jmc.ui.common.PatternFly.Palette;
+import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class TimeDisplay extends Composite {
 

@@ -71,10 +71,10 @@ import org.openjdk.jmc.ui.accessibility.FocusTracker;
 import org.openjdk.jmc.ui.charts.IChartInfoVisitor;
 import org.openjdk.jmc.ui.charts.IXDataRenderer;
 import org.openjdk.jmc.ui.charts.XYChart;
-import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.common.util.Environment;
 import org.openjdk.jmc.ui.common.util.Environment.OSType;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
+import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class ChartCanvas extends Canvas {
 	private static int MIN_LANE_HEIGHT = 50;
@@ -468,7 +468,7 @@ public class ChartCanvas extends Canvas {
 	 *            the provided y coordinate
 	 * @return a Point that represents the (x,y) coordinates in the chart's coordinate space
 	 */
-	private Point translateDisplayToImageCoordinates(int x, int y) {
+	protected Point translateDisplayToImageCoordinates(int x, int y) {
 		int xImage = (int) Math.round(x / xScale);
 		int yImage = (int) Math.round(y / yScale);
 		return new Point(xImage, yImage);
@@ -481,8 +481,19 @@ public class ChartCanvas extends Canvas {
 	 *            the provided display x coordinate
 	 * @return the x coordinate in the chart's coordinate space
 	 */
-	private int translateDisplayToImageXCoordinates(int x) {
+	protected int translateDisplayToImageXCoordinates(int x) {
 		return (int) Math.round(x / xScale);
+	}
+
+	/**
+	 * Translates a display x coordinate into an image x coordinate for the chart.
+	 *
+	 * @param x
+	 *            the provided display x coordinate
+	 * @return the x coordinate in the chart's coordinate space
+	 */
+	protected int translateDisplayToImageYCoordinates(int y) {
+		return (int) Math.round(y / yScale);
 	}
 
 	public Object getHoveredItemData() {

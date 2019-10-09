@@ -51,7 +51,9 @@ import org.openjdk.jmc.common.unit.QuantitiesToolkit;
 import org.openjdk.jmc.common.unit.QuantityRange;
 import org.openjdk.jmc.common.unit.UnitLookup;
 import org.openjdk.jmc.ui.charts.IChartInfoVisitor.ITick;
-import org.openjdk.jmc.ui.common.PatternFly.Palette;
+import org.openjdk.jmc.ui.misc.ChartDisplayControlBar;
+import org.openjdk.jmc.ui.misc.TimelineCanvas;
+import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class XYChart {
 	private static final String ELLIPSIS = "..."; //$NON-NLS-1$

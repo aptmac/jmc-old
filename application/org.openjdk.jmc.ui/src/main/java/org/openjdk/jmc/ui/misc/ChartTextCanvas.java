@@ -64,9 +64,9 @@ import org.openjdk.jmc.ui.accessibility.FocusTracker;
 import org.openjdk.jmc.ui.charts.IChartInfoVisitor;
 import org.openjdk.jmc.ui.charts.IXDataRenderer;
 import org.openjdk.jmc.ui.charts.XYChart;
-import org.openjdk.jmc.ui.common.PatternFly.Palette;
 import org.openjdk.jmc.ui.common.util.Environment;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
+import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class ChartTextCanvas extends Canvas {
 	private static int MIN_LANE_HEIGHT = 50;
@@ -228,7 +228,7 @@ public class ChartTextCanvas extends Canvas {
 
 			if (awtNeedsRedraw || !awtCanvas.hasImage(rect.width, rect.height)) {
 				Graphics2D g2d = awtCanvas.getGraphics(rect.width, rect.height);
-				Point adjusted = translateDisplayToImageCoordinates(rect.width, rect.height);
+				Point adjusted = chartCanvas.translateDisplayToImageCoordinates(rect.width, rect.height);
 				g2d.setColor(Palette.PF_BLACK_100.getAWTColor());
 				g2d.fillRect(0, 0, adjusted.x, adjusted.y);
 				render(g2d, adjusted.x, adjusted.y);
@@ -241,26 +241,6 @@ public class ChartTextCanvas extends Canvas {
 				awtNeedsRedraw = false;
 			}
 			awtCanvas.paint(e, 0, 0);
-			// Crude, flickering highlight of areas also delivered to tooltips.
-			// FIXME: Remove flicker by drawing in a buffered stage (AWT or SWT).
-//			List<Rectangle2D> rs = highlightRects;
-//			if (rs != null) {
-//				GC gc = e.gc;
-//				gc.setForeground(getForeground());
-//				for (Rectangle2D r : rs) {
-//					int x = (int) (((int) r.getX()) * xScale);
-//					int y = (int) (((int) r.getY()) * yScale);
-//					if ((r.getWidth() == 0) && (r.getHeight() == 0)) {
-//						int width = (int) Math.round(4 * xScale);
-//						int height = (int) Math.round(4 * yScale);
-//						gc.drawOval(x - (int) Math.round(2 * xScale), y - (int) Math.round(2 * yScale), width, height);
-//					} else {
-//						int width = (int) Math.round(r.getWidth() * xScale);
-//						int height = (int) Math.round(r.getHeight() * yScale);
-////						gc.drawRectangle(x, y, width, height);
-//					}
-//				}
-//			}
 		}
 	}
 
@@ -356,21 +336,6 @@ public class ChartTextCanvas extends Canvas {
 		}
 	}
 
-	/**
-	 * Translates display coordinates into image coordinates for the chart.
-	 *
-	 * @param x
-	 *            the provided x coordinate
-	 * @param y
-	 *            the provided y coordinate
-	 * @return a Point that represents the (x,y) coordinates in the chart's coordinate space
-	 */
-	private Point translateDisplayToImageCoordinates(int x, int y) {
-		int xImage = (int) Math.round(x / xScale);
-		int yImage = (int) Math.round(y / yScale);
-		return new Point(xImage, yImage);
-	}
-
 	public Object getHoveredItemData() {
 		return this.hoveredItemData;
 	}
@@ -453,35 +418,15 @@ public class ChartTextCanvas extends Canvas {
 	}
 
 	private void toggleSelect(int x, int y) {
-		Point p = translateDisplayToImageCoordinates(x, y);
+		Point p = chartCanvas.translateDisplayToImageCoordinates(x, y);
 		if (awtChart != null) {
 			final IQuantity[] range = new IQuantity[2];
-			infoAt(new IChartInfoVisitor.Adapter() {
-				@Override
-				public void visit(IBucket bucket) {
-//					if (range[0] == null) {
-//						range[0] = (IQuantity) bucket.getStartX();
-//						range[1] = (IQuantity) bucket.getEndX();
-//					}
-				}
-
-				@Override
-				public void visit(ISpan span) {
-//					if (range[0] == null) {
-//						IDisplayable x0 = span.getStartX();
-//						IDisplayable x1 = span.getEndX();
-//						range[0] = (x0 instanceof IQuantity) ? (IQuantity) x0 : null;
-//						range[1] = (x1 instanceof IQuantity) ? (IQuantity) x1 : null;
-//					}
-				}
-			}, x, y);
 			if ((range[0] != null) || (range[1] != null)) {
 				if (!awtChart.select(range[0], range[1], p.y, p.y, true)) {
 					awtChart.clearSelection();
 				}
 			} else {
 				if (!awtChart.select(p.x, p.x, p.y, p.y, true)) {
-					// range is [null, null]
 					awtChart.clearSelection();
 				}
 			}
@@ -523,7 +468,7 @@ public class ChartTextCanvas extends Canvas {
 	}
 
 	public void infoAt(IChartInfoVisitor visitor, int x, int y) {
-		Point p = translateDisplayToImageCoordinates(x, y);
+		Point p = chartCanvas.translateDisplayToImageCoordinates(x, y);
 		if (awtChart != null) {
 			awtChart.infoAt(visitor, p.x, p.y);
 		}
