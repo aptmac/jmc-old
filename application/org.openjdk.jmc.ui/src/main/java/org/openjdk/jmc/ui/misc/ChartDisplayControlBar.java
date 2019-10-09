@@ -105,15 +105,12 @@ public class ChartDisplayControlBar extends Composite {
 	public ChartDisplayControlBar(Composite parent) {
 		super(parent, SWT.NO_BACKGROUND);
 
-		GridLayout layout = new GridLayout();
-		layout.numColumns = 1;
-		layout.makeColumnsEqualWidth = false;
 		this.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
 		this.setBackground(Display.getCurrent().getSystemColor(SWT.COLOR_GRAY));
-		this.setLayout(layout);
+		this.setLayout(new GridLayout());
 
-		cursors.put(DEFAULT_CURSOR, Display.getCurrent().getSystemCursor(SWT.CURSOR_ARROW));
-		cursors.put(HAND_CURSOR, Display.getCurrent().getSystemCursor(SWT.CURSOR_HAND));
+		cursors.put(DEFAULT_CURSOR, getDisplay().getSystemCursor(SWT.CURSOR_ARROW));
+		cursors.put(HAND_CURSOR, getDisplay().getSystemCursor(SWT.CURSOR_HAND));
 		cursors.put(ZOOM_IN_CURSOR, new Cursor(getDisplay(),
 				UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_IN).getImageData(), 0, 0));
 		cursors.put(ZOOM_OUT_CURSOR, new Cursor(getDisplay(),
@@ -132,8 +129,6 @@ public class ChartDisplayControlBar extends Composite {
 			};
 		});
 		buttonGroup.add(selectionBtn);
-
-		// SPACE
 
 		zoomInBtn = new Button(this, SWT.TOGGLE);
 		zoomInBtn.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
@@ -192,8 +187,6 @@ public class ChartDisplayControlBar extends Composite {
 		});
 		zoomOutBtn.addMouseListener(new LongPressListener(-ZOOM_AMOUNT));
 		buttonGroup.add(zoomOutBtn);
-
-		// SPACE
 
 		zoomPanBtn = new Button(this, SWT.TOGGLE);
 		zoomPanBtn.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));

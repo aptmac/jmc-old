@@ -13,7 +13,6 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
 
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
@@ -136,9 +135,9 @@ public class TimelineCanvas extends Canvas {
 			e.x = chartCanvas.translateDisplayToImageXCoordinates(e.x);
 			e.y = chartCanvas.translateDisplayToImageYCoordinates(e.y);
 			if (timelineRect.contains(e.x, e.y)) {
-				setCursor(Display.getCurrent().getSystemCursor(SWT.CURSOR_HAND));
+				setCursor(getDisplay().getSystemCursor(SWT.CURSOR_HAND));
 			} else {
-				setCursor(Display.getCurrent().getSystemCursor(SWT.CURSOR_ARROW));
+				setCursor(getDisplay().getSystemCursor(SWT.CURSOR_ARROW));
 			}
 			if (isDrag) {
 				lastSelection = currentSelection;
