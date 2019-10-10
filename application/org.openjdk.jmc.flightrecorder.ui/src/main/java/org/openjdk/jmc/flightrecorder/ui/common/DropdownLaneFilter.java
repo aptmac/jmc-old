@@ -49,17 +49,17 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.openjdk.jmc.common.item.ItemFilters;
 import org.openjdk.jmc.flightrecorder.ui.common.LaneEditor.LaneDefinition;
+import org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
 
 public class DropdownLaneFilter extends Composite {
-
-	private static final String QUICK_FILTER_ID = "Quick Filter"; //$NON-NLS-1$
-	private static final String THREAD_STATE_SELECTION = "Thread State Selection"; //$NON-NLS-1$
+	private static final int EXTRA_SHELL_WIDTH = 100;
+	private static final int SHELL_HEIGHT = 400;
 	private Button dropdownButton;
 	private GridLayout layout;
+	private MCContextMenuManager mm;
 	private Shell shell;
 	private ShellAdapter shellDisposeAdapter;
-	private MCContextMenuManager mm;
 	private ThreadGraphLanes lanes;
 	private TypeFilterBuilder filterEditor;
 
@@ -72,7 +72,7 @@ public class DropdownLaneFilter extends Composite {
 		setLayout(layout);
 		dropdownButton = new Button(this, SWT.TOGGLE);
 		dropdownButton.setLayoutData(new GridData(GridData.FILL_BOTH));
-		dropdownButton.setText(THREAD_STATE_SELECTION);
+		dropdownButton.setText(Messages.DropdownLaneFilter_THREAD_STATE_SELECTION);
 		dropdownButton.addListener(SWT.MouseDown, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
@@ -98,7 +98,7 @@ public class DropdownLaneFilter extends Composite {
 
 		shell = new Shell(DropdownLaneFilter.this.getShell(), SWT.BORDER);
 		shell.setLayout(this.layout);
-		shell.setSize(shellRect.width + 100, 400);
+		shell.setSize(shellRect.width + EXTRA_SHELL_WIDTH, SHELL_HEIGHT);
 		shell.setLocation(shellRect.x, shellRect.y);
 		shell.addShellListener(this.shellDisposeAdapter);
 
@@ -143,7 +143,7 @@ public class DropdownLaneFilter extends Composite {
 	 * Sets the quick filter to be active, and update the context menu.
 	 */
 	private void onTypeFilterChange() {
-		LaneDefinition quickLaneDef = new LaneDefinition(QUICK_FILTER_ID, true,
+		LaneDefinition quickLaneDef = new LaneDefinition(Messages.DropdownLaneFilter_QUICK_FILTER, true,
 					ItemFilters.type(filterEditor.getCheckedTypeIds().collect(Collectors.toSet())), false);
 		lanes.useDropdownFilter(quickLaneDef);
 		lanes.updateContextMenu(mm, false);

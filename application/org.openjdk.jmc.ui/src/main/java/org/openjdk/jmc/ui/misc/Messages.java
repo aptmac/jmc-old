@@ -94,6 +94,16 @@ public class Messages extends NLS {
 	public static String NumberFieldEditor_ERROR_MESSAGE_NO_SMALLER;
 	public static String ProgressComposite_PLEASE_WAIT;
 	public static String QuestionLinkDialog_FAILED_OPEN_BROWSER;
+	public static String TimeFilter_END_TIME_EXCEEDS_ERROR;
+	public static String TimeFilter_ERROR;
+	public static String TimeFilter_FILTER;
+	public static String TimeFilter_FILTER_EVENTS;
+	public static String TimeFilter_FROM;
+	public static String TimeFilter_INVALID_FORMAT_ERROR;
+	public static String TimeFilter_RESET;
+	public static String TimeFilter_START_TIME_LONGER_THAN_END_ERROR;
+	public static String TimeFilter_START_TIME_PRECEEDS_ERROR;
+	public static String TimeFilter_TO;
 
 	static {
 		NLS.initializeMessages(BUNDLE_NAME, Messages.class);
