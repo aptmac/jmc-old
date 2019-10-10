@@ -96,6 +96,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 	private static final String CHART = "chart"; //$NON-NLS-1$
 	private static final String SELECTED = "selected"; //$NON-NLS-1$
 	private static final int X_OFFSET = 0;
+	private static final int Y_OFFSET = 0;
 	private final IItemFilter pageFilter;
 	protected final StreamModel model;
 	protected CheckboxTableViewer chartLegend;
@@ -257,7 +258,7 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		PersistableSashForm.loadState(sash, state.getChild(SASH));
 		DataPageToolkit.createChartTimestampTooltip(chartCanvas);
 
-		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), X_OFFSET, timelineCanvas, filterBar, displayBar);
+		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), X_OFFSET, Y_OFFSET, timelineCanvas, filterBar, displayBar);
 		DataPageToolkit.setChart(chartCanvas, chart, pageContainer::showSelection);
 		DataPageToolkit.setChart(textCanvas, chart, pageContainer::showSelection);
 		SelectionStoreActionToolkit.addSelectionStoreRangeActions(pageContainer.getSelectionStore(), chart,
