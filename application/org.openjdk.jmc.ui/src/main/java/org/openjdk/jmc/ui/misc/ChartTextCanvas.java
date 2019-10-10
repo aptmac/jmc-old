@@ -34,9 +34,7 @@
 package org.openjdk.jmc.ui.misc;
 
 import java.awt.Graphics2D;
-import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -59,7 +57,6 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.ui.UIPlugin;
 import org.openjdk.jmc.ui.accessibility.FocusTracker;
 import org.openjdk.jmc.ui.charts.IChartInfoVisitor;
@@ -71,11 +68,8 @@ import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class ChartTextCanvas extends Canvas {
 	private static int MIN_LANE_HEIGHT = 50;
-	private int lastMouseX = -1;
-	private int lastMouseY = -1;
-	private int numItems = 0;
+	private int numItems;
 	private List<Rectangle2D> highlightRects;
-	private Object hoveredItemData;
 
 	private class Selector extends MouseAdapter implements MouseMoveListener, MouseTrackListener {
 
@@ -121,8 +115,6 @@ public class ChartTextCanvas extends Canvas {
 				if (selectionListener != null) {
 					selectionListener.run();
 				}
-				// if selectionEnd variables are non-zero (large selection in progress)
-				//    if the ctrl+clicked is in the same selection, then it needs to be un-highlighted
 			} else if (((e.stateMask & SWT.SHIFT) != 0) && (e.button == 1)) {
 				 if (highlightSelectionEnd.y == -1) {
 					highlightSelectionEnd = new Point(e.x, e.y);
@@ -160,8 +152,6 @@ public class ChartTextCanvas extends Canvas {
 				highlightRects = null;
 				updateSelectionState(e);
 			} else {
-				lastMouseX = e.x;
-				lastMouseY = e.y;
 				updateHighlightRects();
 			}
 		}
@@ -197,9 +187,6 @@ public class ChartTextCanvas extends Canvas {
 
 		@Override
 		public void mouseExit(MouseEvent e) {
-			if (!getClientArea().contains(e.x, e.y)) {
-				resetHoveredItemData();
-			}
 			clearHighlightRects();
 		}
 
@@ -221,9 +208,7 @@ public class ChartTextCanvas extends Canvas {
 		@Override
 		public void paintControl(PaintEvent e) {
 			Rectangle rect = new Rectangle(0, 0, getParent().getSize().x, getParent().getSize().y);
-			if (getNumItems() == 1 || (MIN_LANE_HEIGHT * getNumItems() < rect.height)) {
-				// it fills the height
-			} else {
+			if (getNumItems() != 1 || !(MIN_LANE_HEIGHT * getNumItems() < rect.height)) {
 				rect.height = MIN_LANE_HEIGHT * getNumItems();
 			}
 
@@ -233,9 +218,7 @@ public class ChartTextCanvas extends Canvas {
 				g2d.setColor(Palette.PF_BLACK_100.getAWTColor());
 				g2d.fillRect(0, 0, adjusted.x, adjusted.y);
 				render(g2d, adjusted.x, adjusted.y);
-				if (getParent() instanceof ScrolledComposite) {
-					((ScrolledComposite) getParent()).setMinSize(rect.width, rect.height);
-				}
+				((ScrolledComposite) getParent()).setMinSize(rect.width, rect.height);
 				if (highlightRects != null) {
 					updateHighlightRects();
 				}
@@ -301,6 +284,7 @@ public class ChartTextCanvas extends Canvas {
 
 	public ChartTextCanvas(Composite parent) {
 		super(parent, SWT.NO_BACKGROUND);
+		numItems = 0;
 		addPaintListener(new Painter());
 		Selector selector = new Selector();
 		addMouseListener(selector);
@@ -310,10 +294,7 @@ public class ChartTextCanvas extends Canvas {
 		aaListener = new AntiAliasingListener();
 		UIPlugin.getDefault().getPreferenceStore().addPropertyChangeListener(aaListener);
 		addDisposeListener(e -> UIPlugin.getDefault().getPreferenceStore().removePropertyChangeListener(aaListener));
-		if (getParent() instanceof ScrolledComposite) {
-			((ScrolledComposite) getParent()).getVerticalBar()
-				.addListener(SWT.Selection, e -> vBarScroll());
-		}
+		((ScrolledComposite) getParent()).getVerticalBar().addListener(SWT.Selection, e -> vBarScroll());
 	}
 
 	private void vBarScroll() {
@@ -337,70 +318,15 @@ public class ChartTextCanvas extends Canvas {
 		}
 	}
 
-	public Object getHoveredItemData() {
-		return this.hoveredItemData;
-	}
-
-	public void setHoveredItemData(Object data) {
-		this.hoveredItemData = data;
-	}
-
-	public void resetHoveredItemData() {
-		this.hoveredItemData = null;
-	}
-
 	public void syncHighlightedRectangles (List<Rectangle2D> newRects) {
 		highlightRects = newRects;
 		redraw();
 	}
 
 	private void updateHighlightRects() {
-		List<Rectangle2D> newRects = new ArrayList<>();
-		infoAt(new IChartInfoVisitor.Adapter() {
-			@Override
-			public void visit(IBucket bucket) {
-				newRects.add(bucket.getTarget());
-			}
-
-			@Override
-			public void visit(IPoint point) {
-				Point2D target = point.getTarget();
-				newRects.add(new Rectangle2D.Double(target.getX(), target.getY(), 0, 0));
-			}
-
-			@Override
-			public void visit(ISpan span) {
-//				newRects.add(span.getTarget()); // stop
-			}
-
-			@Override
-			public void visit(ITick tick) {
-				Point2D target = tick.getTarget();
-				newRects.add(new Rectangle2D.Double(target.getX(), target.getY(), 0, 0));
-			}
-
-			@Override
-			public void visit(ILane lane) {
-				// FIXME: Do we want this highlighted?
-			}
-
-			@Override
-			public void hover(Object data) {
-				if (data != null) {
-					setHoveredItemData(data);
-				}
-			}
-		}, lastMouseX, lastMouseY);
-		// Attempt to reduce flicker by avoiding unnecessary updates.
-		if (highlightRects != null) {
-			highlightRects.size();
-		}
-		if (!newRects.equals(highlightRects)) {
-			highlightRects = newRects;
-			redraw();
-			if (chartCanvas != null ) {
-				chartCanvas.syncHighlightedRectangles(highlightRects);
-			}
+		redraw();
+		if (chartCanvas != null) {
+			chartCanvas.syncHighlightedRectangles(highlightRects);
 		}
 	}
 
@@ -421,15 +347,8 @@ public class ChartTextCanvas extends Canvas {
 	private void toggleSelect(int x, int y) {
 		Point p = chartCanvas.translateDisplayToImageCoordinates(x, y);
 		if (awtChart != null) {
-			final IQuantity[] range = new IQuantity[2];
-			if ((range[0] != null) || (range[1] != null)) {
-				if (!awtChart.select(range[0], range[1], p.y, p.y, true)) {
-					awtChart.clearSelection();
-				}
-			} else {
-				if (!awtChart.select(p.x, p.x, p.y, p.y, true)) {
-					awtChart.clearSelection();
-				}
+			if (!awtChart.select(p.x, p.x, p.y, p.y, true)) {
+				awtChart.clearSelection();
 			}
 			redrawChartText();
 			redrawChart();
