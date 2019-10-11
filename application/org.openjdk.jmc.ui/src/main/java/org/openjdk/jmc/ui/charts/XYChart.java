@@ -59,7 +59,6 @@ public class XYChart {
 	private static final String ELLIPSIS = "..."; //$NON-NLS-1$
 	private static final Color SELECTION_COLOR = new Color(255, 255, 255, 220);
 	private static final Color RANGE_INDICATION_COLOR = new Color(255, 60, 20);
-	private static final int Y_OFFSET = 35;
 	private static final int RANGE_INDICATOR_HEIGHT = 7;
 	private final IQuantity start;
 	private final IQuantity end;
@@ -67,6 +66,7 @@ public class XYChart {
 	private IXDataRenderer rendererRoot;
 	private IRenderedRow rendererResult;
 	private final int xOffset;
+	private int yOffset = 35;
 	private final int bucketWidth;
 	// FIXME: Use bucketWidth * ticksPerBucket instead of hardcoded value?
 //	private final int ticksPerBucket = 4;
@@ -102,8 +102,9 @@ public class XYChart {
 	}
 
 	// JFR Threads Page
-	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, TimelineCanvas timelineCanvas, ChartFilterControlBar filterBar, ChartDisplayControlBar displayBar) {
+	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, int yOffset, TimelineCanvas timelineCanvas, ChartFilterControlBar filterBar, ChartDisplayControlBar displayBar) {
 		this(range.getStart(), range.getEnd(), rendererRoot, xOffset);
+		this.yOffset = yOffset;
 		this.timelineCanvas = timelineCanvas;
 		this.filterBar = filterBar;
 		this.displayBar = displayBar;
@@ -163,24 +164,33 @@ public class XYChart {
 	}
 
 	public void renderChart(Graphics2D context, int width, int height) {
-		if (width > xOffset && height > Y_OFFSET) {
-			axisWidth = width;
+		if (width > xOffset && height > yOffset) {
+			axisWidth = width - xOffset;
 			// FIXME: xBucketRange and xTickRange should be more related, so that each tick is typically an integer number of buckets (or possibly 2.5 buckets).
 			xBucketRange = new SubdividedQuantityRange(currentStart, currentEnd, axisWidth, bucketWidth);
 			// FIXME: Use bucketWidth * ticksPerBucket instead of hardcoded value?
 			xTickRange = new SubdividedQuantityRange(currentStart, currentEnd, axisWidth, 100);
 			AffineTransform oldTransform = context.getTransform();
-			doRenderChart(context, height);
+			context.translate(xOffset, 0);
+			doRenderChart(context, height - yOffset);
 			context.setTransform(oldTransform);
 		}
 	}
 
+	public void renderTextCanvasText(Graphics2D context, int width) {
+		axisWidth = width;
+		AffineTransform oldTransform = context.getTransform();
+		doRenderTextCanvasText(context);
+		context.setTransform(oldTransform);
+	}
+
 	public void renderText(Graphics2D context, int width, int height) {
-		if (width >= xOffset && height > Y_OFFSET) {
-			axisWidth = width;
+		if (width > xOffset && height > yOffset) {
+			axisWidth = xOffset;
 			AffineTransform oldTransform = context.getTransform();
-			doRenderText(context, height);
+			doRenderText(context);
 			context.setTransform(oldTransform);
+			axisWidth = width - xOffset;
 		}
 	}
 
@@ -226,7 +236,14 @@ public class XYChart {
 		renderRangeIndication(context, axisHeight + 25);
 	}
 
-	private void doRenderText(Graphics2D context, int axisHeight) {
+	private void doRenderText(Graphics2D context) {
+		AffineTransform oldTransform = context.getTransform();
+		rowColorCounter = -1;
+		renderText(context, rendererResult);
+		context.setTransform(oldTransform);
+	}
+
+	private void doRenderTextCanvasText(Graphics2D context) {
 		AffineTransform oldTransform = context.getTransform();
 		rowColorCounter = 0;
 		renderText(context, rendererResult);
@@ -239,13 +256,17 @@ public class XYChart {
 
 	private void renderSelectionText(Graphics2D context, IRenderedRow row) {
 		if (selectedRows.contains(row.getPayload())) {
-			Color highlight = new Color(0, 206, 209, 20);
-			context.setColor(highlight);
-			context.fillRect(0, 0, axisWidth, row.getHeight());
+			if (row.getHeight() != rendererResult.getHeight()) {
+				Color highlight = new Color(0, 206, 209, 20);
+				context.setColor(highlight);
+				context.fillRect(0, 0, axisWidth, row.getHeight());
+			} else {
+				selectedRows.clear();
+			}
 		} else {
 			List<IRenderedRow> subdivision = row.getNestedRows();
 			if (subdivision.isEmpty()) {
-				dimRect(context, 0, axisWidth, row.getHeight(), true);
+				dimRect(context, 0, axisWidth, row.getHeight());
 			} else {
 				for (IRenderedRow nestedRow : row.getNestedRows()) {
 					renderSelectionText(context, nestedRow);
@@ -262,7 +283,7 @@ public class XYChart {
 		} else {
 			List<IRenderedRow> subdivision = row.getNestedRows();
 			if (subdivision.isEmpty()) {
-				dimRect(context, 0, axisWidth, row.getHeight(), true);
+				dimRect(context, 0, axisWidth, row.getHeight());
 			} else {
 				for (IRenderedRow nestedRow : row.getNestedRows()) {
 					renderSelectionChart(context, nestedRow);
@@ -276,14 +297,16 @@ public class XYChart {
 	// Paint the background of every-other row in a slightly different shade
 	// to better differentiate the thread lanes from one another
 	private void paintRowBackground(Graphics2D context, int height) {
-       if (rowColorCounter % 2 == 0) {
-           context.setColor(Palette.PF_BLACK_100.getAWTColor());
-       } else {
-           context.setColor(Palette.PF_BLACK_200.getAWTColor());
-       }
-       context.fillRect(0, 0, axisWidth, height);
-       rowColorCounter++;
-   }
+		if (rowColorCounter >= 0) {
+			if (rowColorCounter % 2 == 0) {
+				context.setColor(Palette.PF_BLACK_100.getAWTColor());
+			} else {
+				context.setColor(Palette.PF_BLACK_200.getAWTColor());
+			}
+			context.fillRect(0, 0, axisWidth, height);
+			rowColorCounter++;
+		}
+	}
 
 	private void renderText(Graphics2D context, IRenderedRow row) {
 		String text = row.getName();
@@ -608,8 +631,8 @@ public class XYChart {
 		int xStart = Math.min(x1, x2);
 		int xEnd = Math.max(x1, x2);
 
-		if (xBucketRange != null && (xEnd != xStart)) {
-			return select(xBucketRange.getQuantityAtPixel(Math.max(0, xStart)), xBucketRange.getQuantityAtPixel(xEnd),
+		if (xBucketRange != null && (xEnd != xStart) && xEnd - xOffset >= 0) {
+			return select(xBucketRange.getQuantityAtPixel(Math.max(0, xStart - xOffset)), xBucketRange.getQuantityAtPixel(xEnd - xOffset),
 					y1, y2, clear);
 		} else {
 			return select(null, null, y1, y2, clear);
@@ -667,7 +690,7 @@ public class XYChart {
 
 	private boolean addPayload(IRenderedRow row) {
 		Object payload = row.getPayload();
-		if (payload != null && row.getHeight() != rendererResult.getHeight()) {
+		if (payload != null) {
 			if (selectedRows.contains(payload)) { // ctrl+click deselection
 				selectedRows.remove(payload);
 			} else {
@@ -697,25 +720,20 @@ public class XYChart {
 //			context.setPaintMode();
 //		}
 		if (selFrom > 0) {
-			dimRect(context, 0, selFrom, height, false);
+			dimRect(context, 0, selFrom, height);
 			context.setColor(Color.BLACK);
 			context.drawLine(selFrom, 0, selFrom, height);
 		}
 		if (selTo < axisWidth) {
-			dimRect(context, selTo, axisWidth - selTo, height, false);
+			dimRect(context, selTo, axisWidth - selTo, height);
 			context.setColor(Color.BLACK);
 			context.drawLine(selTo, 0, selTo, height);
 		}
 	}
 
-	private static void dimRect(Graphics2D context, int from, int width, int height, boolean isDimWholeLane) {
+	private static void dimRect(Graphics2D context, int from, int width, int height) {
 		context.setColor(SELECTION_COLOR);
-		if (isDimWholeLane) {
-			context.fillRect(from , 0, width, height);
-		} else {
-			context.fillRect(from, 0, width, height);
-		}
-
+		context.fillRect(from , 0, width, height);
 	}
 
 	/**

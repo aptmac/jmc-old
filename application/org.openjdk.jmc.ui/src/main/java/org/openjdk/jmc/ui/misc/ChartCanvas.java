@@ -228,7 +228,9 @@ public class ChartCanvas extends Canvas {
 		@Override
 		public void paintControl(PaintEvent e) {
 			Rectangle rect = new Rectangle(0, 0, getParent().getSize().x, getParent().getSize().y);
-			if (getNumItems() == 1 || (MIN_LANE_HEIGHT * getNumItems() < rect.height)) {
+			if (getNumItems() == 0) {
+				rect = getClientArea();
+			} else if (getNumItems() == 1 || (MIN_LANE_HEIGHT * getNumItems() < rect.height)) {
 				// it fills the height
 			} else {
 				rect.height = MIN_LANE_HEIGHT * getNumItems();
@@ -457,6 +459,9 @@ public class ChartCanvas extends Canvas {
 	private void render(Graphics2D context, int width, int height) {
 		if (awtChart != null) {
 			awtChart.renderChart(context, width, height);
+			if (textCanvas == null) {
+				awtChart.renderText(context, width, height);
+			}
 		}
 	}
 
