@@ -190,6 +190,7 @@ public class XYChart {
 			AffineTransform oldTransform = context.getTransform();
 			doRenderText(context);
 			context.setTransform(oldTransform);
+			axisWidth = width - xOffset;
 		}
 	}
 
