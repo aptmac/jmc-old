@@ -65,6 +65,7 @@ public class XYChart {
 	private IQuantity rangeDuration;
 	private IXDataRenderer rendererRoot;
 	private IRenderedRow rendererResult;
+	private boolean isRangeUpdated;
 	private final int xOffset;
 	private int yOffset = 35;
 	private final int bucketWidth;
@@ -135,6 +136,7 @@ public class XYChart {
 		this.end = end;
 		this.xOffset = xOffset;
 		this.bucketWidth = bucketWidth;
+		isRangeUpdated = false;
 	}
 	
 	public void setRendererRoot(IXDataRenderer rendererRoot) {
@@ -200,8 +202,9 @@ public class XYChart {
 		int x1 = (int) fullRangeAxis.getPixel(currentStart);
 		int x2 = (int) Math.ceil(fullRangeAxis.getPixel(currentEnd));
 		
-		if (timelineCanvas != null) {
+		if (timelineCanvas != null && isRangeUpdated) {
 			timelineCanvas.renderRangeIndicator(x1, x2);
+			isRangeUpdated = false;
 		} else {
 			context.setPaint(RANGE_INDICATION_COLOR);
 			context.fillRect(x1, rangeIndicatorY, x2 - x1, RANGE_INDICATOR_HEIGHT);
@@ -608,6 +611,7 @@ public class XYChart {
 				filterBar.setEndTime(currentEnd);
 			}
 			rangeListeners.stream().forEach(l -> l.accept(getVisibleRange()));
+			isRangeUpdated = true;
 		}
 	}
 
@@ -669,7 +673,7 @@ public class XYChart {
 	}
 
 	private boolean addSelectedRows(IRenderedRow row, int yRowStart, int ySelectionStart, int ySelectionEnd) {
-		List<IRenderedRow> subdivision = row.getNestedRows(); // height 1450, has all 32 rows
+		List<IRenderedRow> subdivision = row.getNestedRows();
 		if (subdivision.isEmpty()) {
 			return addPayload(row);
 		} else {
