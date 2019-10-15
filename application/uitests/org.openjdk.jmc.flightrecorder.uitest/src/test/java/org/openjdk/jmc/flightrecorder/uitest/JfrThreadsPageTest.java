@@ -41,15 +41,20 @@ import org.openjdk.jmc.test.jemmy.MCUITestRule;
 import org.openjdk.jmc.test.jemmy.misc.wrappers.MCChartCanvas;
 import org.openjdk.jmc.test.jemmy.misc.wrappers.JfrNavigator;
 import org.openjdk.jmc.test.jemmy.misc.wrappers.JfrUi;
+import org.openjdk.jmc.test.jemmy.misc.wrappers.MCButton;
 import org.openjdk.jmc.test.jemmy.misc.wrappers.MCMenu;
 import org.openjdk.jmc.test.jemmy.misc.wrappers.MCTable;
+import org.openjdk.jmc.test.jemmy.misc.wrappers.MCToolBar;
 
 public class JfrThreadsPageTest extends MCJemmyTestBase {
 
 	private static final String PLAIN_JFR = "plain_recording.jfr";
 	private static final String TABLE_COLUMN_HEADER = "Thread";
+	private static final String OK_BUTTON = "OK";
 	private static final String HIDE_THREAD = org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages.ThreadsPage_HIDE_THREAD_ACTION;
 	private static final String RESET_CHART = org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages.ThreadsPage_RESET_CHART_TO_SELECTION_ACTION;
+	private static final String TABLE_TOOLTIP = org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages.ThreadsPage_VIEW_THREAD_DETAILS;
+	private static final String TABLE_SHELL_TEXT = org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages.ThreadsPage_TABLE_POPUP_TITLE;
 
 	private static MCChartCanvas chartCanvas;
 	private static MCTable threadsTable;
@@ -60,7 +65,6 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 		public void before() {
 			JfrUi.openJfr(materialize("jfr", PLAIN_JFR, JfrThreadsPageTest.class));
 			JfrNavigator.selectTab(JfrUi.Tabs.THREADS);
-			threadsTable = MCTable.getByColumnHeader(TABLE_COLUMN_HEADER);
 			chartCanvas = MCChartCanvas.getChartCanvas();
 		}
 
@@ -72,7 +76,10 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 
 	@Test
 	public void testMenuItemEnablement() {
+		openThreadsTable();
 		final int numThreads = threadsTable.getItemCount();
+		closeThreadsTable();
+
 		Assert.assertTrue(numThreads > 0);
 
 		Assert.assertFalse(chartCanvas.isContextMenuItemEnabled(RESET_CHART));
@@ -92,13 +99,19 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 	@Test
 	public void testHideAllThreads() {
 		final int numSelection = 7;
+
+		openThreadsTable();
 		final int numThreads = threadsTable.getItemCount();
+		closeThreadsTable();
+
 		Assert.assertTrue(numThreads > 0 && numThreads >= numSelection);
 		Assert.assertTrue(chartCanvas.isContextMenuItemEnabled(HIDE_THREAD));
 		Assert.assertFalse(chartCanvas.isContextMenuItemEnabled(RESET_CHART));
 
+		openThreadsTable();
 		// Select a limited number of threads in the chart using the table
 		threadsTable.selectItems(0, numSelection - 1);
+		closeThreadsTable();
 
 		// Hide all the threads from the chart
 		for (int i = 0; i < numSelection; i++) {
@@ -115,5 +128,18 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 		Assert.assertTrue(chartCanvas.isContextMenuItemEnabled(HIDE_THREAD));
 		Assert.assertFalse(chartCanvas.isContextMenuItemEnabled(RESET_CHART));
 	}
-}
 
+	private void openThreadsTable() {
+		MCToolBar.focusMc();
+		MCToolBar tb = MCToolBar.getByToolTip(TABLE_TOOLTIP);
+		tb.clickToolItem(TABLE_TOOLTIP);
+		threadsTable = MCTable.getByColumnHeader(TABLE_SHELL_TEXT, TABLE_COLUMN_HEADER);
+	}
+
+	private void closeThreadsTable() {
+		MCButton okButton = MCButton.getByLabel(TABLE_SHELL_TEXT, OK_BUTTON);
+		okButton.click();
+		MCToolBar.focusMc();
+	}
+
+}

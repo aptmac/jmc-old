@@ -281,6 +281,19 @@ public class MCTable extends MCJemmyBase {
 	/**
 	 * Finds tables by column header (first match only)
 	 *
+	 * @param shellText
+	 *            text to look up the shell that contains the table
+	 * @param headerName
+	 *            the name of the column header
+	 * @return a {@link MCTable}
+	 */
+	public static MCTable getByColumnHeader(String shellText , String headerName) {
+		return getByColumnHeader(getShellByText(shellText), headerName);
+	}
+
+	/**
+	 * Finds tables by column header (first match only)
+	 *
 	 * @param shell
 	 *            the shell in which to look for the table
 	 * @param headerName

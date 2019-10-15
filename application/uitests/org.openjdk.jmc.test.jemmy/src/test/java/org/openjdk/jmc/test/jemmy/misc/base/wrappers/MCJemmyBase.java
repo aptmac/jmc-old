@@ -214,6 +214,17 @@ public class MCJemmyBase {
 	}
 
 	/**
+	 * Gets a shell by text
+	 *
+	 * @param text
+	 *            the text string to lookup the shell with
+	 * @return the associated shell
+	 */
+	protected static Wrap<? extends Shell> getShellByText(String text) {
+		return Shells.SHELLS.lookup(Shell.class, new ByTextShell<>(text)).wrap();
+	}
+
+	/**
 	 * Tries to set focus on Mission Control
 	 */
 	public static void focusMc() {
