@@ -160,7 +160,6 @@ abstract class ChartAndPopupTableUI implements IPageUI {
 		};
 		filterBar = new ChartFilterControlBar(chartContainer, resetListener, pageContainer.getRecordingRange());
 		filterBar.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
-		filterBar.setBackground(Palette.PF_BLACK_300.getSWTColor());
 
 		// Container to hold the chart (& timeline) and display toolbar
 		Composite graphContainer = toolkit.createComposite(chartContainer);
