@@ -51,6 +51,7 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 
 import org.openjdk.jmc.common.IState;
+import org.openjdk.jmc.common.IWritableState;
 import org.openjdk.jmc.common.item.IItemCollection;
 import org.openjdk.jmc.common.item.IItemFilter;
 import org.openjdk.jmc.common.unit.IQuantity;
@@ -277,6 +278,12 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 		} else if (table != null) {
 			table.show(items);
 		}
+	}
+
+	@Override
+	public void saveTo(IWritableState writableState) {
+		table = getUndisposedTable();
+		super.saveTo(writableState);
 	}
 
 	private void onSetRange(Boolean useRange) {
