@@ -102,9 +102,8 @@ public class XYChart {
 	}
 
 	// JFR Threads Page
-	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, int yOffset, TimelineCanvas timelineCanvas, ChartFilterControlBar filterBar, ChartDisplayControlBar displayBar) {
+	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot, int xOffset, TimelineCanvas timelineCanvas, ChartFilterControlBar filterBar, ChartDisplayControlBar displayBar) {
 		this(range.getStart(), range.getEnd(), rendererRoot, xOffset);
-		this.yOffset = yOffset;
 		this.timelineCanvas = timelineCanvas;
 		this.filterBar = filterBar;
 		this.displayBar = displayBar;

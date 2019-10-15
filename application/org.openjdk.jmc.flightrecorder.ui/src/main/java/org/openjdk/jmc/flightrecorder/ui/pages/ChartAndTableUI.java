@@ -86,16 +86,16 @@ abstract class ChartAndTableUI implements IPageUI {
 	private static final String CHART = "chart"; //$NON-NLS-1$
 	private static final String SELECTED = "selected"; //$NON-NLS-1$
 	private static final int X_OFFSET = 180;
-	private final IItemFilter pageFilter;
-	private final StreamModel model;
+	private IItemFilter pageFilter;
+	protected StreamModel model;
 	protected CheckboxTableViewer chartLegend;
-	protected final Form form;
-	protected final Composite chartContainer;
-	protected final ChartCanvas chartCanvas;
-	protected final FilterComponent tableFilterComponent;
-	protected final ItemHistogram table;
-	protected final SashForm sash;
-	private final IPageContainer pageContainer;
+	protected Form form;
+	protected Composite chartContainer;
+	protected ChartCanvas chartCanvas;
+	protected FilterComponent tableFilterComponent;
+	protected ItemHistogram table;
+	protected SashForm sash;
+	private IPageContainer pageContainer;
 	protected List<IAction> allChartSeriesActions;
 	private IItemCollection selectionItems;
 	private IRange<IQuantity> timeRange;
@@ -103,6 +103,12 @@ abstract class ChartAndTableUI implements IPageUI {
 	protected FlavorSelector flavorSelector;
 
 	ChartAndTableUI(IItemFilter pageFilter, StreamModel model, Composite parent, FormToolkit toolkit,
+			IPageContainer pageContainer, IState state, String sectionTitle, IItemFilter tableFilter, Image icon,
+			FlavorSelectorState flavorSelectorState) {
+		init(pageFilter, model, parent, toolkit, pageContainer, state, sectionTitle, tableFilter, icon, flavorSelectorState);
+	}
+
+	protected void init(IItemFilter pageFilter, StreamModel model, Composite parent, FormToolkit toolkit,
 			IPageContainer pageContainer, IState state, String sectionTitle, IItemFilter tableFilter, Image icon,
 			FlavorSelectorState flavorSelectorState) {
 		this.pageFilter = pageFilter;
