@@ -100,6 +100,8 @@ public class Messages extends NLS {
 	public static String CompilationsPage_ROW_DURATIONS;
 	public static String CompilationsPage_TAB_COMPILATIONS;
 	public static String CompilationsPage_TAB_COMPILATIONS_FAILED;
+	public static String DropdownLaneFilter_QUICK_FILTER;
+	public static String DropdownLaneFilter_THREAD_STATE_SELECTION;
 	public static String DUMP_RECORDING_DEFAULT_TIMESPAN_TO_DUMP;
 	public static String DUMP_RECORDING_NO_DEFAULT;
 	public static String DUMP_RECORDING_TIMESPAN;
