@@ -208,7 +208,7 @@ public class ChartTextCanvas extends Canvas {
 		@Override
 		public void paintControl(PaintEvent e) {
 			Rectangle rect = new Rectangle(0, 0, getParent().getSize().x, getParent().getSize().y);
-			if (getNumItems() != 1 || !(MIN_LANE_HEIGHT * getNumItems() < rect.height)) {
+			if (getNumItems() != 1 && !(MIN_LANE_HEIGHT * getNumItems() < rect.height)) {
 				rect.height = MIN_LANE_HEIGHT * getNumItems();
 			}
 
