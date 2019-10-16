@@ -529,6 +529,24 @@ public class MCTable extends MCJemmyBase {
 	}
 
 	/**
+	 * Gets the number of items selected in the table
+	 *
+	 * @return the number of items selected in the table
+	 */
+	public int getSelectionCount() {
+		final Table table = getWrap().getControl();
+		Fetcher<Integer> fetcher = new Fetcher<Integer>() {
+			@Override
+			public void run() {
+				int count = table.getSelectionCount();
+				setOutput(count);
+			}
+		};
+		Display.getDefault().syncExec(fetcher);
+		return fetcher.getOutput().intValue();
+	}
+
+	/**
 	 * Whether or not the table contains the text given
 	 *
 	 * @param item
