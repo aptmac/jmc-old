@@ -96,6 +96,19 @@ public class MCButton extends MCJemmyBase {
 	}
 
 	/**
+	 * Finds a button in a shell with the given text and returns it.
+	 *
+	 * @param label
+	 *            the label string of the button
+	 * @param shellText
+	 *            the text to look up the shell that the button is contained in
+	 * @return a {@link MCButton} in the shell matching the label
+	 */
+	public static MCButton getByLabel(String  shellText, String label) {
+		return getByLabel(getShellByText(shellText), label);
+	}
+
+	/**
 	 * Finds a button by button label and returns it
 	 *
 	 * @param shell
