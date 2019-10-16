@@ -130,16 +130,21 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 	}
 
 	private void openThreadsTable() {
-		MCToolBar.focusMc();
-		MCToolBar tb = MCToolBar.getByToolTip(TABLE_TOOLTIP);
-		tb.clickToolItem(TABLE_TOOLTIP);
-		threadsTable = MCTable.getByColumnHeader(TABLE_SHELL_TEXT, TABLE_COLUMN_HEADER);
+		if (threadsTable == null) {
+			MCToolBar.focusMc();
+			MCToolBar tb = MCToolBar.getByToolTip(TABLE_TOOLTIP);
+			tb.clickToolItem(TABLE_TOOLTIP);
+			threadsTable = MCTable.getByColumnHeader(TABLE_SHELL_TEXT, TABLE_COLUMN_HEADER);
+		}
 	}
 
 	private void closeThreadsTable() {
-		MCButton okButton = MCButton.getByLabel(TABLE_SHELL_TEXT, OK_BUTTON);
-		okButton.click();
-		MCToolBar.focusMc();
+		if (threadsTable != null) {
+			MCButton okButton = MCButton.getByLabel(TABLE_SHELL_TEXT, OK_BUTTON);
+			okButton.click();
+			threadsTable = null;
+			MCToolBar.focusMc();
+		}
 	}
 
 }
