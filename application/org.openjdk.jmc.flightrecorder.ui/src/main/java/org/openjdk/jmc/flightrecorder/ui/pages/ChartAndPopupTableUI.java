@@ -86,6 +86,7 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 	private static final String SELECTED = "selected"; //$NON-NLS-1$
 	private static final int TIMELINE_HEIGHT = 40;
 	private static final int X_OFFSET = 0;
+	private static final int Y_OFFSET = 0;
 	protected ChartFilterControlBar filterBar;
 	protected ChartTextCanvas textCanvas;
 	protected ItemHistogram hiddenTable;
@@ -240,7 +241,7 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 		PersistableSashForm.loadState(sash, state.getChild(SASH));
 		DataPageToolkit.createChartTimestampTooltip(chartCanvas);
 
-		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), X_OFFSET, timelineCanvas, filterBar, displayBar);
+		chart = new XYChart(pageContainer.getRecordingRange(), RendererToolkit.empty(), X_OFFSET, Y_OFFSET, timelineCanvas, filterBar, displayBar);
 		DataPageToolkit.setChart(chartCanvas, chart, pageContainer::showSelection);
 		DataPageToolkit.setChart(textCanvas, chart, pageContainer::showSelection);
 		SelectionStoreActionToolkit.addSelectionStoreRangeActions(pageContainer.getSelectionStore(), chart,
