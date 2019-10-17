@@ -51,14 +51,12 @@ import org.openjdk.jmc.ui.charts.XYChart;
 public class TimeFilter extends Composite {
 
 	private ChartCanvas chartCanvas;
-	private IRange<IQuantity> recordingRange;
 	private XYChart chart;
 	private TimeDisplay startDisplay;
 	private TimeDisplay endDisplay;
 
 	public TimeFilter(Composite parent, IRange<IQuantity> recordingRange, Listener resetListener) {
 		super(parent, SWT.NO_BACKGROUND);
-		this.recordingRange = recordingRange;
 		this.setLayout(new GridLayout(7, false));
 		Label eventsLabel = new Label(this, SWT.LEFT);
 		eventsLabel.setText(Messages.TimeFilter_FILTER_EVENTS);
