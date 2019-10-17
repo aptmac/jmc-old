@@ -44,13 +44,20 @@ import org.openjdk.jmc.test.jemmy.misc.wrappers.JfrUi;
 import org.openjdk.jmc.test.jemmy.misc.wrappers.MCButton;
 import org.openjdk.jmc.test.jemmy.misc.wrappers.MCMenu;
 import org.openjdk.jmc.test.jemmy.misc.wrappers.MCTable;
+import org.openjdk.jmc.test.jemmy.misc.wrappers.MCText;
 import org.openjdk.jmc.test.jemmy.misc.wrappers.MCToolBar;
+import org.openjdk.jmc.ui.UIPlugin;
 
 public class JfrThreadsPageTest extends MCJemmyTestBase {
 
 	private static final String PLAIN_JFR = "plain_recording.jfr";
 	private static final String TABLE_COLUMN_HEADER = "Thread";
 	private static final String OK_BUTTON = "OK";
+	private static final String RESET_BUTTON = "Reset";
+	private static final String FILTER_BUTTON = "Filter";
+	private static final String START_TIME = "08:06:19:489";
+	private static final String NEW_START_TIME = "08:06:19:500";
+	private static final String DEFAULT_ZOOM = "100.00 %";
 	private static final String HIDE_THREAD = org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages.ThreadsPage_HIDE_THREAD_ACTION;
 	private static final String RESET_CHART = org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages.ThreadsPage_RESET_CHART_TO_SELECTION_ACTION;
 	private static final String TABLE_TOOLTIP = org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages.ThreadsPage_VIEW_THREAD_DETAILS;
@@ -73,6 +80,34 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 			MCMenu.closeActiveEditor();
 		}
 	};
+
+	@Test
+	public void testResetButtons() {
+		MCText StartTimeField = MCText.getByText(START_TIME);
+		MCText zoomDisplay = MCText.getByText(DEFAULT_ZOOM);
+		MCButton filterBtn = MCButton.getByLabel(FILTER_BUTTON);
+		MCButton resetBtn = MCButton.getByLabel(RESET_BUTTON);
+		MCButton scaleToFitBtn = MCButton.getByImage(
+				UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_SCALE_TO_FIT));
+
+		StartTimeField.setText(NEW_START_TIME);
+		filterBtn.click();
+		Assert.assertNotEquals(START_TIME, StartTimeField.getText());
+		Assert.assertNotEquals(zoomDisplay.getText(), DEFAULT_ZOOM);
+
+		resetBtn.click();
+		Assert.assertEquals(START_TIME, StartTimeField.getText());
+		Assert.assertEquals(zoomDisplay.getText(), DEFAULT_ZOOM);
+
+		StartTimeField.setText(NEW_START_TIME);
+		filterBtn.click();
+		Assert.assertNotEquals(START_TIME, StartTimeField.getText());
+		Assert.assertNotEquals(zoomDisplay.getText(), DEFAULT_ZOOM);
+
+		scaleToFitBtn.click();
+		Assert.assertEquals(zoomDisplay.getText(), DEFAULT_ZOOM);
+		Assert.assertEquals(START_TIME, StartTimeField.getText());
+	}
 
 	@Test
 	public void testMenuItemEnablement() {
