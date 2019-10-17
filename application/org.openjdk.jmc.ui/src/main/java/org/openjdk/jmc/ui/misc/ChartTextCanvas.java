@@ -338,7 +338,9 @@ public class ChartTextCanvas extends Canvas {
 	}
 
 	public void select(int x1, int x2, int y1, int y2, boolean clear) {
-		if ((awtChart != null) && awtChart.select(x1, x2, y1, y2, clear)) {
+		Point p1 = chartCanvas.translateDisplayToImageCoordinates(x1, y1);
+		Point p2 = chartCanvas.translateDisplayToImageCoordinates(x2, y2);
+		if ((awtChart != null) && awtChart.select(p1.x, p2.x, p1.y, p2.y, clear)) {
 			redrawChartText();
 			redrawChart();
 		}
