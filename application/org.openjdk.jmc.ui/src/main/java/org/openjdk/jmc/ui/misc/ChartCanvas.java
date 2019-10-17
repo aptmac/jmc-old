@@ -557,9 +557,6 @@ public class ChartCanvas extends Canvas {
 			}
 		}, lastMouseX, lastMouseY);
 		// Attempt to reduce flicker by avoiding unnecessary updates.
-		if (highlightRects != null) {
-			highlightRects.size();
-		}
 		if (!newRects.equals(highlightRects)) {
 			highlightRects = newRects;
 			if (textCanvas != null) {

@@ -385,11 +385,11 @@ public class XYChart {
 
 		// if panning would flow over the recording range start or end time,
 		// calculate the difference and add it so the other side.
-		if (newStart.compareTo(start) == -1) {
+		if (newStart.compareTo(start) < 0) {
 			IQuantity diff = start.subtract(newStart);
 			newStart = start;
 			newEnd = newEnd.add(diff);
-		} else if (newEnd.compareTo(end) == 1) {
+		} else if (newEnd.compareTo(end) > 0) {
 			IQuantity diff = newEnd.subtract(end);
 			newStart = newStart.add(diff);
 			newEnd = end;
@@ -508,11 +508,11 @@ public class XYChart {
 
 		// if zooming out would flow over the recording range start or end time,
 		// calculate the difference and add it to the other side.
-		if (newStart.compareTo(start) == -1) {
+		if (newStart.compareTo(start) < 0) {
 			IQuantity diff = start.subtract(newStart);
 			newStart = start;
 			newEnd = newEnd.add(diff);
-		} else if (newEnd.compareTo(end) == 1) {
+		} else if (newEnd.compareTo(end) > 0) {
 			IQuantity diff = newEnd.subtract(end);
 			newStart = newStart.subtract(diff);
 			newEnd = end;
@@ -675,7 +675,6 @@ public class XYChart {
 		} else {
 			boolean nestedHasPayload = false;
 			for (IRenderedRow nestedRow : row.getNestedRows()) {
-				row.getNestedRows().size();
 				int yRowEnd = yRowStart + nestedRow.getHeight();
 				if (yRowStart > ySelectionEnd) {
 					break;

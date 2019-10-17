@@ -50,9 +50,10 @@ import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class TimeDisplay extends Composite {
 
-		private final String TIME_FORMAT_REGEX = "\\d{2}\\:\\d{2}\\:\\d{2}\\:\\d{3}";
+		private static final String TIME_FORMAT_REGEX = "\\d{2}\\:\\d{2}\\:\\d{2}\\:\\d{3}";
+		private static final String DIGIT_FORMAT_REGEX = "\\d{3}|\\d{2}";
 		private final Pattern timePattern = Pattern.compile(TIME_FORMAT_REGEX);
-		private final Pattern digitPattern = Pattern.compile("\\d{3}|\\d{2}");
+		private final Pattern digitPattern = Pattern.compile(DIGIT_FORMAT_REGEX);
 		private Calendar currentCalendar; // currently active time in Calendar form
 		private IQuantity currentTime; // currently active time
 		private IQuantity displayTime; // time shown in the widget (may or not be what's active)
