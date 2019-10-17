@@ -129,6 +129,24 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 		Assert.assertFalse(chartCanvas.isContextMenuItemEnabled(RESET_CHART));
 	}
 
+	@Test
+	public void testPopupTableSelection() {
+		openThreadsTable();
+		final int numSelection = 7;
+		final int numThreads = threadsTable.getItemCount();
+		Assert.assertTrue(numThreads > 0 && numThreads >= numSelection);
+
+		threadsTable.selectItems(0, numSelection - 1);
+		int originalSelection = threadsTable.getSelectionCount();
+		Assert.assertEquals(numSelection, originalSelection);
+		closeThreadsTable();
+
+		openThreadsTable();
+		int newSelection = threadsTable.getSelectionCount();
+		Assert.assertEquals(newSelection, originalSelection);
+		closeThreadsTable();
+	}
+
 	private void openThreadsTable() {
 		if (threadsTable == null) {
 			MCToolBar.focusMc();
