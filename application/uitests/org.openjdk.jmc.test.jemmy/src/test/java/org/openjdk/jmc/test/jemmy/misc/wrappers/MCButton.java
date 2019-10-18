@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -58,6 +59,45 @@ public class MCButton extends MCJemmyBase {
 
 	private MCButton(Wrap<? extends Button> button) {
 		this.control = button;
+	}
+
+	/**
+	 * Finds a button in the supplied shell by image and returns it.
+	 *
+	 * @param shell
+	 *            the shell where to search for the button
+	 * @param image
+	 *            the image to look up the button with
+	 * @return a {@link MCButton} (possibly null)
+	 */
+	@SuppressWarnings("unchecked")
+	public static MCButton getByImage(Wrap<? extends Shell> shell, Image image) {
+		List<Wrap<? extends Button>> allVisibleButtonWraps = getVisible(
+				shell.as(Parent.class, Button.class).lookup(Button.class));
+		for (final Wrap<? extends Button> buttonWrap : allVisibleButtonWraps) {
+			Fetcher<Image> fetcher = new Fetcher<Image>() {
+				@Override
+				public void run() {
+					setOutput(buttonWrap.getControl().getImage());
+				}
+			};
+			Display.getDefault().syncExec(fetcher);
+			if (image.equals(fetcher.getOutput())) {
+				return new MCButton(buttonWrap);
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Finds a button in the default Mission Control shell and returns it.
+	 *
+	 * @param image
+	 *            the image of the button
+	 * @return a {@link MCButton} in the default shell matching the image.
+	 */
+	public static MCButton getByImage(Image image) {
+		return getByImage(getShell(), image);
 	}
 
 	/**
