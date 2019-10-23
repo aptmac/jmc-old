@@ -44,6 +44,8 @@ import org.openjdk.jmc.ui.misc.ChartCanvas;
 import org.jemmy.Point;
 import org.jemmy.control.Wrap;
 import org.jemmy.input.StringPopupOwner;
+import org.jemmy.interfaces.Keyboard.KeyboardButtons;
+import org.jemmy.interfaces.Mouse.MouseButtons;
 import org.jemmy.interfaces.Parent;
 import org.jemmy.resources.StringComparePolicy;
 
@@ -104,6 +106,32 @@ public class MCChartCanvas extends MCJemmyBase {
 		StringPopupOwner<Shell> contextMenu = control.as(StringPopupOwner.class);
 		contextMenu.setPolicy(StringComparePolicy.SUBSTRING);
 		contextMenu.push(getRelativeClickPoint(), new String[]{menuItemText});
+	}
+
+	/**
+	 * Click the center of the chart in the ChartCanvas
+	 */
+	@SuppressWarnings("unchecked")
+	public void clickChart() {
+		Display.getDefault().syncExec(() -> {
+			control.mouse().click(1, getRelativeClickPoint(), MouseButtons.BUTTON1);
+		});
+	}
+
+	/**
+	 * Zoom in the chart with keyboard controls
+	 */
+	public void keyboardZoomIn() {
+		control.keyboard().pushKey(KeyboardButtons.UP);
+		waitForIdle();
+	}
+
+	/**
+	 * Zoom out the chart with keyboard controls
+	 */
+	public void keyboardZoomOut() {
+		control.keyboard().pushKey(KeyboardButtons.DOWN);
+		waitForIdle();
 	}
 
 	/**
