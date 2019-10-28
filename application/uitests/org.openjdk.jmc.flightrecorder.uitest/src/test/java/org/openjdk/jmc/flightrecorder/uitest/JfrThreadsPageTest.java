@@ -57,11 +57,14 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 	private static final String FILTER_BUTTON = "Filter";
 	private static final String START_TIME = "08:06:19:489";
 	private static final String NEW_START_TIME = "08:06:19:500";
+	private static final String INVALID_START_TIME = "08:06:19:480";
+	private static final String INVALID_END_TIME = "08:07:19:733";
 	private static final String DEFAULT_ZOOM = "100.00 %";
 	private static final String HIDE_THREAD = org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages.ThreadsPage_HIDE_THREAD_ACTION;
 	private static final String RESET_CHART = org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages.ThreadsPage_RESET_CHART_TO_SELECTION_ACTION;
 	private static final String TABLE_TOOLTIP = org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages.ThreadsPage_VIEW_THREAD_DETAILS;
 	private static final String TABLE_SHELL_TEXT = org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages.ThreadsPage_TABLE_POPUP_TITLE;
+	private static final String TIME_FILTER_ERROR = org.openjdk.jmc.ui.misc.Messages.TimeFilter_ERROR;
 
 	private static MCChartCanvas chartCanvas;
 	private static MCTable threadsTable;
@@ -134,6 +137,30 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 		scaleToFitBtn.click();
 		Assert.assertEquals(zoomDisplay.getText(), DEFAULT_ZOOM);
 		Assert.assertEquals(START_TIME, StartTimeField.getText());
+	}
+
+	@Test
+	public void testTimeFilterInvalid() {
+		MCText startTimeField = MCText.getByText(START_TIME);
+		MCText endTimeField = MCText.getByText(START_TIME);
+		MCButton filterBtn = MCButton.getByLabel(FILTER_BUTTON);
+		MCButton resetBtn = MCButton.getByLabel(RESET_BUTTON);
+
+		startTimeField.setText(INVALID_START_TIME);
+		filterBtn.click();
+		MCButton okButton = MCButton.getByLabel(TIME_FILTER_ERROR, OK_BUTTON);
+		Assert.assertNotNull(okButton);
+		okButton.click();
+
+		MCButton.focusMc();
+		resetBtn.click();
+		Assert.assertEquals(START_TIME, startTimeField.getText());
+
+		endTimeField.setText(INVALID_END_TIME);
+		filterBtn.click();
+		okButton = MCButton.getByLabel(TIME_FILTER_ERROR, OK_BUTTON);
+		Assert.assertNotNull(okButton);
+		okButton.click();
 	}
 
 	@Test
