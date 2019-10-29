@@ -360,7 +360,6 @@ public class ChartTextCanvas extends Canvas {
 	public void setChart(XYChart awtChart) {
 		this.awtChart = awtChart;
 		notifyListener();
-		redrawChartText();
 	}
 
 	public void setChartCanvas(ChartCanvas chartCanvas) {
