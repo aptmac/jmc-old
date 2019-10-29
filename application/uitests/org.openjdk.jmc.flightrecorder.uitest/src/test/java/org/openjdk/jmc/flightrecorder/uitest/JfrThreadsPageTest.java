@@ -82,6 +82,33 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 	};
 
 	@Test
+	public void testZoom() {
+		MCButton zoomInBtn = MCButton.getByImage(
+				UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_IN));
+		MCButton zoomOutBtn = MCButton.getByImage(
+				UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_OUT));
+		MCText zoomDisplay = MCText.getByText(DEFAULT_ZOOM);
+
+		//zoom with display bar
+		Assert.assertEquals(zoomDisplay.getText(), DEFAULT_ZOOM);
+		zoomInBtn.click();
+		chartCanvas.clickChart();
+		Assert.assertNotEquals(zoomDisplay.getText(), DEFAULT_ZOOM);
+
+		zoomOutBtn.click();
+		chartCanvas.clickChart();
+		Assert.assertEquals(zoomDisplay.getText(), DEFAULT_ZOOM);
+
+		//zoom with controls
+		chartCanvas.clickChart();
+		chartCanvas.keyboardZoomIn();
+		Assert.assertNotEquals(zoomDisplay.getText(), DEFAULT_ZOOM);
+
+		chartCanvas.keyboardZoomOut();
+		Assert.assertEquals(zoomDisplay.getText(), DEFAULT_ZOOM);
+	}
+
+	@Test
 	public void testResetButtons() {
 		MCText StartTimeField = MCText.getByText(START_TIME);
 		MCText zoomDisplay = MCText.getByText(DEFAULT_ZOOM);
