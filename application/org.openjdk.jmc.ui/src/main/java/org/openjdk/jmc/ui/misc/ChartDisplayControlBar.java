@@ -108,6 +108,7 @@ public class ChartDisplayControlBar extends Composite {
 		selectionBtn.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
 		selectionBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_SELECTION));
 		selectionBtn.setSelection(true);
+		selectionBtn.setToolTipText(Messages.ChartDisplayControlBar_SELECTION_TOOL_TOOLTIP);
 		selectionBtn.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
@@ -121,6 +122,11 @@ public class ChartDisplayControlBar extends Composite {
 		zoomInBtn.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
 		zoomInBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_IN));
 		zoomInBtn.setSelection(false);
+		StringBuilder sb = new StringBuilder();
+		sb.append(Messages.ChartDisplayControlBar_ZOOM_IN_CLICK_TOOLTIP);
+		sb.append(System.getProperty("line.separator"));
+		sb.append(Messages.ChartDisplayControlBar_ZOOM_IN_HOLD_TOOLTIP);
+		zoomInBtn.setToolTipText(sb.toString());
 		zoomInBtn.addListener(SWT.Selection,  new Listener() {
 			@Override
 			public void handleEvent(Event event) {
@@ -152,6 +158,11 @@ public class ChartDisplayControlBar extends Composite {
 		zoomOutBtn.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
 		zoomOutBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_OUT));
 		zoomOutBtn.setSelection(false);
+		sb = new StringBuilder();
+		sb.append(Messages.ChartDisplayControlBar_ZOOM_OUT_CLICK_TOOLTIP);
+		sb.append(System.getProperty("line.separator"));
+		sb.append(Messages.ChartDisplayControlBar_ZOOM_OUT_HOLD_TOOLTIP);
+		zoomOutBtn.setToolTipText(sb.toString());
 		zoomOutBtn.addListener(SWT.Selection,  new Listener() {
 			@Override
 			public void handleEvent(Event e) {
@@ -171,6 +182,7 @@ public class ChartDisplayControlBar extends Composite {
 		zoomPanBtn.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
 		zoomPanBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_ZOOM_PAN));
 		zoomPanBtn.setSelection(false);
+		zoomPanBtn.setToolTipText(Messages.ChartDisplayControlBar_ZOOM_PAN_TOOLTIP);
 		zoomPanBtn.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
@@ -183,6 +195,7 @@ public class ChartDisplayControlBar extends Composite {
 		scaleToFitBtn.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
 		scaleToFitBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_SCALE_TO_FIT));
 		scaleToFitBtn.setSelection(false);
+		scaleToFitBtn.setToolTipText(Messages.ChartDisplayControlBar_SCALE_TO_FIT_TOOLTIP);
 		scaleToFitBtn.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
