@@ -68,7 +68,15 @@ public class DropdownLaneFilter extends Composite {
 		this.lanes = lanes;
 		this.mm = mm;
 		this.layout = createGridLayout();
-		this.shellDisposeAdapter = createDisposeAdapter();
+		this.shellDisposeAdapter = new ShellAdapter() {
+			public void shellDeactivated(ShellEvent event) {
+				if (dropdownButton.isDisposed()) { return; }
+				if (dropdownButton.getSelection()) {
+					disposeDropdown();
+					dropdownButton.setSelection(false);
+				}
+			}
+		};
 		setLayout(layout);
 		dropdownButton = new Button(this, SWT.TOGGLE);
 		dropdownButton.setLayoutData(new GridData(GridData.FILL_BOTH));
@@ -120,22 +128,6 @@ public class DropdownLaneFilter extends Composite {
 		layout.marginHeight = 0;
 		layout.marginWidth = 0;
 		return layout;
-	}
-
-	/**
-	 * Prepares the ShellAdapter which will be used when the dropdown
-	 * is to be disposed of.
-	 * @return ShellAdapter to be used by the dropdown shell
-	 */
-	private ShellAdapter createDisposeAdapter() {
-		return new ShellAdapter() {
-			public void shellDeactivated(ShellEvent event) {
-				if (dropdownButton.getSelection()) {
-					disposeDropdown();
-					dropdownButton.setSelection(false);
-				}
-			}
-		};
 	}
 
 	/**

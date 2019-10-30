@@ -38,6 +38,13 @@ public class Messages extends NLS {
 	private static final String BUNDLE_NAME = "org.openjdk.jmc.ui.misc.messages"; //$NON-NLS-1$
 
 	public static String AbstractWarningItem_WARNING;
+	public static String ChartDisplayControlBar_SCALE_TO_FIT_TOOLTIP;
+	public static String ChartDisplayControlBar_SELECTION_TOOL_TOOLTIP;
+	public static String ChartDisplayControlBar_ZOOM_IN_CLICK_TOOLTIP;
+	public static String ChartDisplayControlBar_ZOOM_IN_HOLD_TOOLTIP;
+	public static String ChartDisplayControlBar_ZOOM_PAN_TOOLTIP;
+	public static String ChartDisplayControlBar_ZOOM_OUT_CLICK_TOOLTIP;
+	public static String ChartDisplayControlBar_ZOOM_OUT_HOLD_TOOLTIP;
 	public static String DIALOG_FILE_EXISTS_TITLE;
 	public static String DIALOG_OVERWRITE_QUESTION_TEXT;
 	public static String EXPORT_AS_IMAGE_ACTION_TEXT;
