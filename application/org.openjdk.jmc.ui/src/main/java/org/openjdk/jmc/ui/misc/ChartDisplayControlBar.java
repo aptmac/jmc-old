@@ -222,7 +222,7 @@ public class ChartDisplayControlBar extends Composite {
 	}
 
 	public void zoomToSelection() {
-		if (zoomInBtn.getSelection()) {
+		if (zoomInBtn.getSelection() && scale.getSelection() > 0) {
 			IQuantity selectionStart = chart.getSelectionStart();
 			IQuantity selectionEnd = chart.getSelectionEnd();
 			if (selectionStart == null || selectionEnd == null) {
