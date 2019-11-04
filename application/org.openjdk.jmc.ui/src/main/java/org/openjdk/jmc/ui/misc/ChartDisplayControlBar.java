@@ -352,6 +352,7 @@ public class ChartDisplayControlBar extends Composite {
 
 	private class ZoomPan extends Canvas  {
 		private static final int BORDER_PADDING = 2;
+		private static final double MIN_HEIGHT_PERCENT = 0.15;
 		private IRange<IQuantity> chartRange;
 		private IRange<IQuantity> lastChartZoomedRange;
 		private Rectangle zoomRect;
@@ -377,10 +378,19 @@ public class ChartDisplayControlBar extends Composite {
 
 			@Override
 			public void mouseDown(MouseEvent e) {
-				if (e.button == 1 && zoomRect.contains(e.x, e.y)) {
+				if (e.button == 1 && inBounds(e)) {
 					isPan = true;
 					chart.setIsZoomPanDrag(isPan);
 					currentSelection = chartCanvas.translateDisplayToImageCoordinates(e.x, e.y);
+				}
+			}
+
+			private boolean inBounds(MouseEvent e) {
+				Point zoomCanvasBounds = getParent().getSize();
+				if (zoomRect.height < MIN_HEIGHT_PERCENT * zoomCanvasBounds.y ) {
+					return zoomCanvasBounds.x >= e.x && zoomCanvasBounds.y >= e.y;
+				} else {
+					return zoomRect.contains(e.x, e.y);
 				}
 			}
 
