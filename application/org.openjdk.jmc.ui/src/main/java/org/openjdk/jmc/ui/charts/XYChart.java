@@ -554,7 +554,7 @@ public class XYChart {
 		displayBar.setScaleValue(zoomSteps);
 		displayBar.setZoomPercentageText(currentZoom);
 	}
-	
+
 	/**
 	 *  When a drag-select zoom occurs, use the new range value to determine how many steps have been taken,
 	 *  and adjust zoomSteps and zoomPower accordingly
@@ -569,12 +569,28 @@ public class XYChart {
 	 * Calculate the number of steps required to achieve the passed zoom percentage
 	 */
 	private int calculateZoomSteps(double percentage) {
-		double tempPercent = 0;
-		int steps = 0;
-		do {
-			tempPercent = tempPercent + ZOOM_PAN_FACTOR;
-			steps++;
-		} while (tempPercent <= percentage);
+		int steps = (int) Math.floor(percentage / ZOOM_PAN_FACTOR);
+		double tempPercent = steps * ZOOM_PAN_FACTOR;
+
+		if (tempPercent < percentage) {
+			if (percentage > 1 - ZOOM_PAN_FACTOR) {
+				double factor = ZOOM_PAN_FACTOR;
+				do {
+					factor = factor / ZOOM_PAN_MODIFIER;
+					tempPercent = tempPercent + factor;
+					if (modifiedSteps == null) {
+						modifiedSteps = new Stack<Integer>();
+					}
+					if (modifiedSteps.size() == 0 || modifiedSteps.peek() < steps) {
+						modifiedSteps.push(steps);
+					}
+					steps++;
+				} while (tempPercent <= percentage);
+				zoomPanPower = factor / ZOOM_PAN_MODIFIER;
+			} else {
+				steps++;
+			}
+		}
 		return steps;
 	}
 
