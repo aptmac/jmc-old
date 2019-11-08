@@ -51,6 +51,7 @@ import org.openjdk.jmc.common.item.ItemFilters;
 import org.openjdk.jmc.flightrecorder.ui.common.LaneEditor.LaneDefinition;
 import org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
+import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class DropdownLaneFilter extends Composite {
 	private static final int EXTRA_SHELL_WIDTH = 100;
@@ -64,9 +65,10 @@ public class DropdownLaneFilter extends Composite {
 	private TypeFilterBuilder filterEditor;
 
 	public DropdownLaneFilter(Composite parent, ThreadGraphLanes lanes, MCContextMenuManager mm) {
-		super(parent, SWT.NO_BACKGROUND);
+		super(parent, SWT.NONE);
 		this.lanes = lanes;
 		this.mm = mm;
+		this.setBackground(Palette.PF_BLACK_300.getSWTColor());
 		this.layout = createGridLayout();
 		this.shellDisposeAdapter = new ShellAdapter() {
 			public void shellDeactivated(ShellEvent event) {
