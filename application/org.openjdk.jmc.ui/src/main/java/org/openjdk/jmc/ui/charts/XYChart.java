@@ -93,6 +93,7 @@ public class XYChart {
 	private ChartFilterControlBar filterBar;
 	private Stack<Integer> modifiedSteps;
 	private TimelineCanvas timelineCanvas;
+	private int longestCharWidth = 0;
 
 	public XYChart(IRange<IQuantity> range, IXDataRenderer rendererRoot) {
 		this(range.getStart(), range.getEnd(), rendererRoot);
@@ -321,6 +322,9 @@ public class XYChart {
 				context.drawLine(0, height - 1, axisWidth -15, height - 1);
 				int y = ((height - context.getFontMetrics().getHeight()) / 2) + context.getFontMetrics().getAscent();
 				int charsWidth = context.getFontMetrics().charsWidth(text.toCharArray(), 0, text.length());
+				if (charsWidth > longestCharWidth) {
+					longestCharWidth = charsWidth;
+				}
 				if (xOffset > 0 && charsWidth > xOffset) {
 					float fitRatio = ((float) xOffset) / (charsWidth
 							+ context.getFontMetrics().charsWidth(ELLIPSIS.toCharArray(), 0, ELLIPSIS.length()));
@@ -338,6 +342,14 @@ public class XYChart {
 			}
 		}
 		context.translate(0, height);
+	}
+
+	/**
+	 * Get the longest character width of a thread name to be rendered
+	 * @return the character width of longest thread name
+	 */
+	public int getLongestCharWidth() {
+		return longestCharWidth;
 	}
 
 	/**
