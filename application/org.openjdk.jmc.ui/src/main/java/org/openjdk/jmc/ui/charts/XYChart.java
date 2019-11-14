@@ -143,6 +143,7 @@ public class XYChart {
 	public void setRendererRoot(IXDataRenderer rendererRoot) {
 		clearSelection();
 		this.rendererRoot = rendererRoot;
+		longestCharWidth = 0;
 	}
 
 	public IXDataRenderer getRendererRoot() {
