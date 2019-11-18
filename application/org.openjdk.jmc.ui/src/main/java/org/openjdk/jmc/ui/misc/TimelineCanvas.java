@@ -55,8 +55,10 @@ import org.openjdk.jmc.ui.charts.XYChart;
 import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class TimelineCanvas extends Canvas {
-	private static final int RANGE_INDICATOR_HEIGHT = 10;
-	private static final int RANGE_INDICATOR_Y_OFFSET = 25;
+	private static final int BASE_RANGE_INDICATOR_HEIGHT = 10;
+	private static final int BASE_RANGE_INDICATOR_Y_OFFSET = 25;
+	private int rangeIndicatorHeight;
+	private int rangeIndicatorYOffset;
 	private int x1;
 	private int x2;
 	private int xOffset;
@@ -71,7 +73,7 @@ public class TimelineCanvas extends Canvas {
 	private SubdividedQuantityRange xTickRange;
 	private XYChart chart;
 
-	public TimelineCanvas(Composite parent, ChartCanvas chartCanvas, SashForm sashForm) {
+	public TimelineCanvas(Composite parent, ChartCanvas chartCanvas, SashForm sashForm, double yScale) {
 		super(parent, SWT.NONE);
 		this.chartCanvas = chartCanvas;
 		this.sashForm = sashForm;
@@ -80,6 +82,8 @@ public class TimelineCanvas extends Canvas {
 		DragDetector dragDetector = new DragDetector();
 		addMouseListener(dragDetector);
 		addMouseMoveListener(dragDetector);
+		rangeIndicatorHeight = (int) (BASE_RANGE_INDICATOR_HEIGHT * yScale);
+		rangeIndicatorYOffset = (int) (BASE_RANGE_INDICATOR_Y_OFFSET * yScale);
 	}
 
 	private int calculateXOffset() {
@@ -123,8 +127,8 @@ public class TimelineCanvas extends Canvas {
 
 			// Draw the range indicator
 			indicatorRect = dragRect != null ? dragRect : new Rectangle(
-					x1 + xOffset, chartCanvas.translateDisplayToImageYCoordinates(RANGE_INDICATOR_Y_OFFSET),
-					x2 - x1, chartCanvas.translateDisplayToImageYCoordinates(RANGE_INDICATOR_HEIGHT));
+					x1 + xOffset, chartCanvas.translateDisplayToImageYCoordinates(rangeIndicatorYOffset),
+					x2 - x1, chartCanvas.translateDisplayToImageYCoordinates(rangeIndicatorHeight));
 			dragRect = null;
 			g2d.setPaint(Palette.PF_ORANGE_400.getAWTColor());
 			g2d.fillRect(indicatorRect.x, indicatorRect.y, indicatorRect.width, indicatorRect.height);
@@ -132,8 +136,8 @@ public class TimelineCanvas extends Canvas {
 			Point totalSize = sashForm.getChildren()[1].getSize();
 			adjusted = chartCanvas.translateDisplayToImageCoordinates(totalSize.x, totalSize.y);
 			timelineRect = new Rectangle(
-					xOffset, chartCanvas.translateDisplayToImageYCoordinates(RANGE_INDICATOR_Y_OFFSET),
-					adjusted.x, chartCanvas.translateDisplayToImageYCoordinates(RANGE_INDICATOR_HEIGHT));
+					xOffset, chartCanvas.translateDisplayToImageYCoordinates(rangeIndicatorYOffset),
+					adjusted.x, chartCanvas.translateDisplayToImageYCoordinates(rangeIndicatorHeight));
 			g2d.setPaint(Palette.PF_BLACK_600.getAWTColor());
 			g2d.drawRect(timelineRect.x, timelineRect.y, timelineRect.width, timelineRect.height);
 
