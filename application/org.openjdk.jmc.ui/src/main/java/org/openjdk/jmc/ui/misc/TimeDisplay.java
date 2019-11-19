@@ -61,7 +61,8 @@ public class TimeDisplay extends Composite {
 		private Text timeText;
 
 		public TimeDisplay(Composite parent) {
-			super(parent, SWT.NO_BACKGROUND);
+			super(parent, SWT.NONE);
+			this.setBackground(Palette.PF_BLACK_300.getSWTColor());
 			this.setLayout(new GridLayout());
 			timeText = new Text(this, SWT.SEARCH | SWT.SINGLE);
 			timeText.setTextLimit(12);

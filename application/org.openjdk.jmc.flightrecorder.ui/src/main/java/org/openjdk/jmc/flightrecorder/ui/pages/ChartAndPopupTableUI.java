@@ -124,6 +124,7 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 				pageContainer.getSelectionStore()::getSelections, this::onFilterChange);
 
 		/**
+		 * Scrolled Composite Page Container - Contains all page functionality
 		 * Chart Container (1 column gridlayout) - Contains filter bar & graph container
 		 * Graph Container (2 column gridlayout) - Contains chart and timeline container & display bar
 		 * Chart and Timeline Container (1 column gridlayout) Contains chart and text container and timeline canvas
@@ -132,9 +133,31 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 		 * Full screen Chart Container (1 column gridlayout) - Contains chart container
 		 * Chart and Text Container (2 column gridlayout) - Contains scText and textCanvas) & scChart (and chart canvas)
 		 */
-		chartContainer = toolkit.createComposite(form.getBody());
+
+		// Scrolled Composite containing all page functionality
+		ScrolledComposite scPageContainer = new ScrolledComposite(form.getBody(), SWT.H_SCROLL | SWT.V_SCROLL);
+
+		chartContainer = toolkit.createComposite(scPageContainer);
 		chartContainer.setLayout(new GridLayout());
 		chartContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+		scPageContainer.setContent(chartContainer);
+		scPageContainer.setAlwaysShowScrollBars(false);
+		scPageContainer.setExpandHorizontal(true);
+		scPageContainer.setExpandVertical(true);
+		scPageContainer.addListener(SWT.Resize, new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				int width = filterBar.computeSize(SWT.DEFAULT, SWT.DEFAULT).x;
+				int height = filterBar.computeSize(SWT.DEFAULT, SWT.DEFAULT).y +
+						displayBar.computeSize(SWT.DEFAULT, SWT.DEFAULT).y;
+				if (width > 0 && height > 0) {
+					 scPageContainer.setMinSize(scPageContainer.computeSize(width, height));
+					 scPageContainer.removeListener(SWT.Resize, this);
+				}
+			}
+		});
+
 		// Filter Controls
 		Listener resetListener = new Listener() {
 			@Override

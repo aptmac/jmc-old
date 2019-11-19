@@ -47,6 +47,7 @@ import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.common.unit.UnitLookup;
 import org.openjdk.jmc.ui.charts.XYChart;
+import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class TimeFilter extends Composite {
 
@@ -56,7 +57,8 @@ public class TimeFilter extends Composite {
 	private TimeDisplay endDisplay;
 
 	public TimeFilter(Composite parent, IRange<IQuantity> recordingRange, Listener resetListener) {
-		super(parent, SWT.NO_BACKGROUND);
+		super(parent, SWT.NONE);
+		this.setBackground(Palette.PF_BLACK_300.getSWTColor());
 		this.setLayout(new GridLayout(7, false));
 		Label eventsLabel = new Label(this, SWT.LEFT);
 		eventsLabel.setText(Messages.TimeFilter_FILTER_EVENTS);
