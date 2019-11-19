@@ -65,7 +65,6 @@ public class XYChart {
 	private IQuantity rangeDuration;
 	private IXDataRenderer rendererRoot;
 	private IRenderedRow rendererResult;
-	private boolean isRangeUpdated;
 	private final int xOffset;
 	private int yOffset = 35;
 	private final int bucketWidth;
@@ -137,7 +136,6 @@ public class XYChart {
 		this.end = end;
 		this.xOffset = xOffset;
 		this.bucketWidth = bucketWidth;
-		isRangeUpdated = false;
 	}
 	
 	public void setRendererRoot(IXDataRenderer rendererRoot) {
@@ -204,9 +202,8 @@ public class XYChart {
 		int x1 = (int) fullRangeAxis.getPixel(currentStart);
 		int x2 = (int) Math.ceil(fullRangeAxis.getPixel(currentEnd));
 		
-		if (timelineCanvas != null && isRangeUpdated) {
+		if (timelineCanvas != null) {
 			timelineCanvas.renderRangeIndicator(x1, x2);
-			isRangeUpdated = false;
 		} else {
 			context.setPaint(RANGE_INDICATION_COLOR);
 			context.fillRect(x1, rangeIndicatorY, x2 - x1, RANGE_INDICATOR_HEIGHT);
@@ -640,7 +637,6 @@ public class XYChart {
 				filterBar.setEndTime(currentEnd);
 			}
 			rangeListeners.stream().forEach(l -> l.accept(getVisibleRange()));
-			isRangeUpdated = true;
 		}
 	}
 

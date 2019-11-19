@@ -46,6 +46,7 @@ import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.forms.widgets.FormToolkit;
@@ -70,6 +71,7 @@ import org.openjdk.jmc.ui.charts.ChartFilterControlBar;
 import org.openjdk.jmc.ui.charts.IXDataRenderer;
 import org.openjdk.jmc.ui.charts.RendererToolkit;
 import org.openjdk.jmc.ui.charts.XYChart;
+import org.openjdk.jmc.ui.common.util.Environment;
 import org.openjdk.jmc.ui.handlers.ActionToolkit;
 import org.openjdk.jmc.ui.misc.ActionUiToolkit;
 import org.openjdk.jmc.ui.misc.ChartCanvas;
@@ -80,6 +82,7 @@ import org.openjdk.jmc.ui.misc.TimelineCanvas;
 
 abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 
+	private static final double Y_SCALE = Display.getCurrent().getDPI().y / Environment.getNormalDPI();
 	private static final String SASH = "sash"; //$NON-NLS-1$
 	private static final String TABLE = "table"; //$NON-NLS-1$
 	private static final String CHART = "chart"; //$NON-NLS-1$
@@ -246,9 +249,9 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 		scText.setExpandHorizontal(true);
 		scText.setExpandVertical(true);
 
-		timelineCanvas = new TimelineCanvas(chartAndTimelineContainer, chartCanvas, sash);
+		timelineCanvas = new TimelineCanvas(chartAndTimelineContainer, chartCanvas, sash, Y_SCALE);
 		GridData gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-		gridData.heightHint = TIMELINE_HEIGHT;
+		gridData.heightHint = (int) (TIMELINE_HEIGHT * Y_SCALE);
 		timelineCanvas.setLayoutData(gridData);
 
 		// add the display bar to the right of the chart scrolled composite
