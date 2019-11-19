@@ -145,6 +145,18 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 		scPageContainer.setAlwaysShowScrollBars(false);
 		scPageContainer.setExpandHorizontal(true);
 		scPageContainer.setExpandVertical(true);
+		scPageContainer.addListener(SWT.Resize, new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				int width = filterBar.computeSize(SWT.DEFAULT, SWT.DEFAULT).x;
+				int height = filterBar.computeSize(SWT.DEFAULT, SWT.DEFAULT).y +
+						displayBar.computeSize(SWT.DEFAULT, SWT.DEFAULT).y;
+				if (width > 0 && height > 0) {
+					 scPageContainer.setMinSize(scPageContainer.computeSize(width, height));
+					 scPageContainer.removeListener(SWT.Resize, this);
+				}
+			}
+		});
 
 		// Filter Controls
 		Listener resetListener = new Listener() {
@@ -233,19 +245,6 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 		scText.setAlwaysShowScrollBars(false);
 		scText.setExpandHorizontal(true);
 		scText.setExpandVertical(true);
-
-		scPageContainer.addListener( SWT.Resize, new Listener() {
-			@Override
-			public void handleEvent(Event event) {
-				int width = filterBar.getClientArea().width;
-				int height = timelineCanvas.getClientArea().height + filterBar.getClientArea().height
-						+ scChart.getClientArea().height;
-				if (width > 0 && height > 0) {
-					 scPageContainer.setMinSize(scPageContainer.computeSize( width, height ) );
-					 scPageContainer.removeListener(SWT.Resize, this);
-				}
-			}
-		});
 
 		timelineCanvas = new TimelineCanvas(chartAndTimelineContainer, chartCanvas, sash);
 		GridData gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
