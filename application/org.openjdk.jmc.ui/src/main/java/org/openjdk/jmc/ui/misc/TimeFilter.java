@@ -63,14 +63,17 @@ public class TimeFilter extends Composite {
 		Label eventsLabel = new Label(this, SWT.LEFT);
 		eventsLabel.setText(Messages.TimeFilter_FILTER_EVENTS);
 		eventsLabel.setFont(JFaceResources.getFontRegistry().get(JFaceResources.BANNER_FONT));
+		eventsLabel.setBackground(Palette.PF_BLACK_300.getSWTColor());
 
-		Label from = new Label(this, SWT.CENTER);
-		from.setText(Messages.TimeFilter_FROM);
+		Label fromLabel = new Label(this, SWT.CENTER);
+		fromLabel.setText(Messages.TimeFilter_FROM);
+		fromLabel.setBackground(Palette.PF_BLACK_300.getSWTColor());
 
 		startDisplay = new TimeDisplay(this);
 
-		Label to = new Label(this, SWT.CENTER);
-		to.setText(Messages.TimeFilter_TO);
+		Label toLabel = new Label(this, SWT.CENTER);
+		toLabel.setText(Messages.TimeFilter_TO);
+		toLabel.setBackground(Palette.PF_BLACK_300.getSWTColor());
 
 		endDisplay = new TimeDisplay(this);
 

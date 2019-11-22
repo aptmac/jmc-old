@@ -89,7 +89,7 @@ public class ChartDisplayControlBar extends Composite {
 	private ZoomPan zoomPan;
 
 	public ChartDisplayControlBar(Composite parent) {
-		super(parent, SWT.NO_BACKGROUND);
+		super(parent, SWT.NONE);
 
 		this.setLayout(new GridLayout());
 		this.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
