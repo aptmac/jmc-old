@@ -54,24 +54,31 @@ public class TimeDisplay extends Composite {
 		private static final String DIGIT_FORMAT_REGEX = "\\d{3}|\\d{2}";
 		private final Pattern timePattern = Pattern.compile(TIME_FORMAT_REGEX);
 		private final Pattern digitPattern = Pattern.compile(DIGIT_FORMAT_REGEX);
-		private Calendar currentCalendar; // currently active time in Calendar form
-		private IQuantity currentTime; // currently active time
-		private IQuantity displayTime; // time shown in the widget (may or not be what's active)
+		public boolean checkTime;
+		private Calendar currentCalendar;
+		private IQuantity currentTime;
+		private IQuantity displayedTime;
 		private StringBuilder sb;
 		private Text timeText;
 
-		public TimeDisplay(Composite parent) {
+		public TimeDisplay(TimeFilter parent) {
 			super(parent, SWT.NONE);
 			this.setBackground(Palette.PF_BLACK_300.getSWTColor());
 			this.setLayout(new GridLayout());
+			checkTime = true;
 			timeText = new Text(this, SWT.SEARCH | SWT.SINGLE);
 			timeText.setTextLimit(12);
 			timeText.addModifyListener(new ModifyListener() {
 				@Override
 				public void modifyText(ModifyEvent e) {
-					displayTime = null;
+					if (!checkTime) {
+						checkTime = true;
+						return;
+					}
+					displayedTime = null;
 					if (isFormatValid() && isValidTime()) {
 						timeText.setForeground(Palette.PF_BLACK.getSWTColor());
+						parent.updateTimeInfo(); // figure out how to stop initial check
 					} else {
 						timeText.setForeground(Palette.PF_RED_100.getSWTColor());
 					}
@@ -81,22 +88,27 @@ public class TimeDisplay extends Composite {
 
 		// Convert epoch ms timestamp to Calendar object
 		private Calendar convertEpochToCalendar(long epoch) {
-			currentCalendar = Calendar.getInstance();
-			currentCalendar.setTime(new Date(epoch));
-			return currentCalendar;
+			Calendar tempCalendar = Calendar.getInstance();
+			tempCalendar.setTime(new Date(epoch));
+			return tempCalendar;
 		}
 
+		private void setCurrentCalendar(long epoch) {
+			currentCalendar = convertEpochToCalendar(epoch);
+		}
+		
 		// Locally store the new time, and format it for displaying in the Text widget
 		public void setTime(IQuantity time) {
+			this.displayedTime = time;
 			this.currentTime = time;
-			displayTime(formatTimeString(convertEpochToCalendar(time.in(UnitLookup.EPOCH_MS).longValue())));
+			setCurrentCalendar(time.in(UnitLookup.EPOCH_MS).longValue());
+			displayTime(formatTimeString(currentCalendar));
 		}
 
 		// Returns the IQuantity time stamp of the time displayed in the widget
 		public IQuantity getDisplayTime() {
-			if (displayTime != null) {
-				formatTimeString(convertEpochToCalendar(displayTime.in(UnitLookup.EPOCH_MS).longValue()));
-				return displayTime;
+			if (displayedTime != null) {
+				return displayedTime;
 			}
 			if (isFormatValid() && isValidTime()) {
 				IQuantity time = currentTime;
@@ -124,7 +136,7 @@ public class TimeDisplay extends Composite {
 					}
 					i++;
 				}
-				this.displayTime = time;
+				setTime(time);
 				return time;
 			}
 			return null;
@@ -144,7 +156,9 @@ public class TimeDisplay extends Composite {
 		}
 
 		public void displayTime(String time) {
+			checkTime = false; // boolean flag to not trigger the modify listener via setText()
 			timeText.setText(time);
+			checkTime = true;
 		}
 
 		/**

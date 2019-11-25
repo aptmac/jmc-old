@@ -40,7 +40,6 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.openjdk.jmc.common.unit.IQuantity;
@@ -52,12 +51,14 @@ import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 public class TimeFilter extends Composite {
 
 	private ChartCanvas chartCanvas;
+	private IRange<IQuantity> recordingRange; 
 	private XYChart chart;
 	private TimeDisplay startDisplay;
 	private TimeDisplay endDisplay;
 
 	public TimeFilter(Composite parent, IRange<IQuantity> recordingRange, Listener resetListener) {
 		super(parent, SWT.NONE);
+		this.recordingRange = recordingRange;
 		this.setBackground(Palette.PF_BLACK_300.getSWTColor());
 		this.setLayout(new GridLayout(7, false));
 		Label eventsLabel = new Label(this, SWT.LEFT);
@@ -77,42 +78,37 @@ public class TimeFilter extends Composite {
 
 		endDisplay = new TimeDisplay(this);
 
-		Button filterBtn = new Button(this, SWT.PUSH);
-		filterBtn.setText(Messages.TimeFilter_FILTER);
-		filterBtn.addListener(SWT.Selection, new Listener() {
-			@Override
-			public void handleEvent(Event event) {
-				if (startDisplay.isFormatValid() && endDisplay.isFormatValid()) {
-					Long startDisplayEpoch = startDisplay.getDisplayTime().in(UnitLookup.EPOCH_MS).longValue();
-					Long endDisplayEpoch = endDisplay.getDisplayTime().in(UnitLookup.EPOCH_MS).longValue();
-					Long endEpoch = recordingRange.getEnd().in(UnitLookup.EPOCH_MS).longValue();
-					Long startEpoch = recordingRange.getStart().in(UnitLookup.EPOCH_MS).longValue();
-					if (startDisplayEpoch < startEpoch) {
-						DialogToolkit.showWarning(Display.getCurrent().getActiveShell(),
-								Messages.TimeFilter_ERROR, Messages.TimeFilter_START_TIME_PRECEEDS_ERROR);
-					} else if (endDisplayEpoch > endEpoch) {
-						DialogToolkit.showWarning(Display.getCurrent().getActiveShell(),
-								Messages.TimeFilter_ERROR, Messages.TimeFilter_END_TIME_EXCEEDS_ERROR);
-					} else if (startDisplayEpoch > endDisplayEpoch) {
-						DialogToolkit.showWarning(Display.getCurrent().getActiveShell(),
-								Messages.TimeFilter_ERROR, Messages.TimeFilter_START_TIME_LONGER_THAN_END_ERROR);
-					} else {
-						chart.setVisibleRange(startDisplay.getDisplayTime(), endDisplay.getDisplayTime());
-						chartCanvas.redrawChart();
-					}
-				} else {
-					DialogToolkit.showWarning(Display.getCurrent().getActiveShell(),
-							Messages.TimeFilter_ERROR, Messages.TimeFilter_INVALID_FORMAT_ERROR);
-				}
-			}
-		});
-
 		Button resetBtn = new Button(this, SWT.PUSH);
 		resetBtn.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
 		resetBtn.setText(Messages.TimeFilter_RESET);
 		resetBtn.addListener(SWT.Selection, resetListener);
 	}
 
+	protected void updateTimeInfo() {
+		if (startDisplay.isFormatValid() && endDisplay.isFormatValid()) {
+			Long startDisplayEpoch = startDisplay.getDisplayTime().in(UnitLookup.EPOCH_MS).longValue();
+			Long endDisplayEpoch = endDisplay.getDisplayTime().in(UnitLookup.EPOCH_MS).longValue();
+			Long endEpoch = recordingRange.getEnd().in(UnitLookup.EPOCH_MS).longValue();
+			Long startEpoch = recordingRange.getStart().in(UnitLookup.EPOCH_MS).longValue();
+			if (startDisplayEpoch < startEpoch) {
+				DialogToolkit.showWarning(Display.getCurrent().getActiveShell(),
+						Messages.TimeFilter_ERROR, Messages.TimeFilter_START_TIME_PRECEEDS_ERROR);
+			} else if (endDisplayEpoch > endEpoch) {
+				DialogToolkit.showWarning(Display.getCurrent().getActiveShell(),
+						Messages.TimeFilter_ERROR, Messages.TimeFilter_END_TIME_EXCEEDS_ERROR);
+			} else if (startDisplayEpoch > endDisplayEpoch) {
+				DialogToolkit.showWarning(Display.getCurrent().getActiveShell(),
+						Messages.TimeFilter_ERROR, Messages.TimeFilter_START_TIME_LONGER_THAN_END_ERROR);
+			} else {
+				chart.setVisibleRange(startDisplay.getDisplayTime(), endDisplay.getDisplayTime());
+				chartCanvas.redrawChart();
+			}
+		} else {
+			DialogToolkit.showWarning(Display.getCurrent().getActiveShell(),
+					Messages.TimeFilter_ERROR, Messages.TimeFilter_INVALID_FORMAT_ERROR);
+		}
+	}
+	
 	public void setChart(XYChart chart) {
 		this.chart = chart;
 	}
