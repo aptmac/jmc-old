@@ -59,6 +59,7 @@ public class XYChart {
 	private static final String ELLIPSIS = "..."; //$NON-NLS-1$
 	private static final Color SELECTION_COLOR = new Color(255, 255, 255, 220);
 	private static final Color RANGE_INDICATION_COLOR = new Color(255, 60, 20);
+	private static final int BASE_ZOOM_LEVEL = 100;
 	private static final int RANGE_INDICATOR_HEIGHT = 7;
 	private final IQuantity start;
 	private final IQuantity end;
@@ -110,7 +111,7 @@ public class XYChart {
 		this.filterBar = filterBar;
 		this.displayBar = displayBar;
 		this.rangeDuration = range.getExtent();
-		this.currentZoom = 100;
+		this.currentZoom = BASE_ZOOM_LEVEL;
 		this.isZoomCalculated = false;
 	}
 	
@@ -465,12 +466,11 @@ public class XYChart {
 	 * @return true if a redraw is required as a result of a successful zoom
 	 */
 	public boolean zoomToStep(int zoomToStep) {
-		int diff = zoomToStep - zoomSteps;
 		if (zoomToStep == 0) {
 			resetTimeline();
 			return true;
 		} else {
-			return zoomRange(diff);
+			return zoomRange(zoomToStep - zoomSteps);
 		}
 	}
 
@@ -480,12 +480,11 @@ public class XYChart {
 	 * @return true if a redraw is required as a result of a successful zoom
 	 */
 	private boolean zoomRange(int steps) {
-		if (steps > 0) {
+		if (steps == 0) {
+			return false;
+		} else if (steps > 0) {
 			zoomIn(steps);
 		} else {
-			if (steps == 0) {
-				return false;
-			}
 			zoomOut(steps);
 		}
 		// set displayBar text
@@ -550,8 +549,8 @@ public class XYChart {
 				newEnd = end;
 			}
 			currentZoom = currentZoom - (zoomPanPower * ZOOM_PAN_MODIFIER * 100);
-			if (currentZoom < 100) {
-				currentZoom = 100;
+			if (currentZoom < BASE_ZOOM_LEVEL) {
+				currentZoom = BASE_ZOOM_LEVEL;
 			}
 			isZoomCalculated = true;
 			zoomSteps--;
@@ -565,7 +564,7 @@ public class XYChart {
 	public void resetZoomFactor() {
 		zoomSteps = 0;
 		zoomPanPower = ZOOM_PAN_FACTOR / ZOOM_PAN_MODIFIER;
-		currentZoom = 100;
+		currentZoom = BASE_ZOOM_LEVEL;
 		displayBar.setZoomPercentageText(currentZoom);
 		modifiedSteps = new Stack<Integer>();
 	}
@@ -581,7 +580,7 @@ public class XYChart {
 	private void selectionZoom(IQuantity newStart, IQuantity newEnd) {
 		double percentage = calculateZoom(newStart, newEnd);
 		zoomSteps = calculateZoomSteps(percentage);
-		currentZoom = 100 + (percentage * 100);
+		currentZoom = BASE_ZOOM_LEVEL + (percentage * 100);
 		displayBar.setScaleValue(zoomSteps);
 		displayBar.setZoomPercentageText(currentZoom);
 	}
