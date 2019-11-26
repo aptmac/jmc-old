@@ -59,6 +59,7 @@ public class XYChart {
 	private static final String ELLIPSIS = "..."; //$NON-NLS-1$
 	private static final Color SELECTION_COLOR = new Color(255, 255, 255, 220);
 	private static final Color RANGE_INDICATION_COLOR = new Color(255, 60, 20);
+	private static final int BASE_ZOOM_LEVEL = 100;
 	private static final int RANGE_INDICATOR_HEIGHT = 7;
 	private final IQuantity start;
 	private final IQuantity end;
@@ -110,7 +111,7 @@ public class XYChart {
 		this.filterBar = filterBar;
 		this.displayBar = displayBar;
 		this.rangeDuration = range.getExtent();
-		this.currentZoom = 100;
+		this.currentZoom = BASE_ZOOM_LEVEL;
 		this.isZoomCalculated = false;
 	}
 	
@@ -460,18 +461,31 @@ public class XYChart {
 	}
 
 	/**
-	 * Zoom based on a percentage of the recording range
-	 * @param zoomInSteps
+	 * Zoom to a specific step count
+	 * @param zoomToStep the desired end zoom step amount
 	 * @return true if a redraw is required as a result of a successful zoom
 	 */
-	public boolean zoomRange(int zoomInSteps) {
-		if (zoomInSteps > 0) {
-			zoomIn();
+	public boolean zoomToStep(int zoomToStep) {
+		if (zoomToStep == 0) {
+			resetTimeline();
+			return true;
 		} else {
-			if (zoomSteps == 0) {
-				return false;
-			}
-			zoomOut();
+			return zoomRange(zoomToStep - zoomSteps);
+		}
+	}
+
+	/**
+	 * Zoom based on a percentage of the recording range
+	 * @param zoomInSteps the amount of desired steps to take
+	 * @return true if a redraw is required as a result of a successful zoom
+	 */
+	private boolean zoomRange(int steps) {
+		if (steps == 0) {
+			return false;
+		} else if (steps > 0) {
+			zoomIn(steps);
+		} else {
+			zoomOut(steps);
 		}
 		// set displayBar text
 		displayBar.setZoomPercentageText(currentZoom);
@@ -487,56 +501,62 @@ public class XYChart {
 	 * modifiedSteps stack. This stack is consulted on zoom out events in order to ensure
 	 * the chart zooms out the same way it was zoomed in.
 	 */
-	private void zoomIn() {
-		IQuantity zoomDiff = rangeDuration.multiply(zoomPanPower);
-		IQuantity newStart = currentStart.in(UnitLookup.EPOCH_NS).add(zoomDiff);
-		IQuantity newEnd = currentEnd.in(UnitLookup.EPOCH_NS).subtract(zoomDiff);
-		if (newStart.compareTo(newEnd) >= 0) { // adjust the zoom factor
-			if (modifiedSteps == null) {
-				modifiedSteps = new Stack<Integer>();
+	private void zoomIn(int steps) {
+		do {
+			IQuantity zoomDiff = rangeDuration.multiply(zoomPanPower);
+			IQuantity newStart = currentStart.in(UnitLookup.EPOCH_NS).add(zoomDiff);
+			IQuantity newEnd = currentEnd.in(UnitLookup.EPOCH_NS).subtract(zoomDiff);
+			if (newStart.compareTo(newEnd) >= 0) { // adjust the zoom factor
+				if (modifiedSteps == null) {
+					modifiedSteps = new Stack<Integer>();
+				}
+				modifiedSteps.push(zoomSteps);
+				zoomPanPower = zoomPanPower / ZOOM_PAN_MODIFIER;
+				zoomDiff = rangeDuration.multiply(zoomPanPower);
+				newStart = currentStart.in(UnitLookup.EPOCH_NS).add(zoomDiff);
+				newEnd = currentEnd.in(UnitLookup.EPOCH_NS).subtract(zoomDiff);
 			}
-			modifiedSteps.push(zoomSteps);
-			zoomPanPower = zoomPanPower / ZOOM_PAN_MODIFIER;
-			zoomDiff = rangeDuration.multiply(zoomPanPower);
-			newStart = currentStart.in(UnitLookup.EPOCH_NS).add(zoomDiff);
-			newEnd = currentEnd.in(UnitLookup.EPOCH_NS).subtract(zoomDiff);
-		}
-		currentZoom = currentZoom + (zoomPanPower * ZOOM_PAN_MODIFIER * 100);
-		isZoomCalculated = true;
-		setVisibleRange(newStart, newEnd);
-		zoomSteps++;
+			currentZoom = currentZoom + (zoomPanPower * ZOOM_PAN_MODIFIER * 100);
+			isZoomCalculated = true;
+			zoomSteps++;
+			setVisibleRange(newStart, newEnd);
+			steps--;
+		} while (steps > 0);
 	}
 
 	/**
 	 * Zoom out of the chart at a rate equal to the how the chart was zoomed in.
 	 */
-	private void zoomOut() {
-		if (modifiedSteps != null && modifiedSteps.size() > 0 && modifiedSteps.peek() == zoomSteps) {
-			modifiedSteps.pop();
-			zoomPanPower = zoomPanPower * ZOOM_PAN_MODIFIER;
-		}
-		IQuantity zoomDiff = rangeDuration.multiply(zoomPanPower);
-		IQuantity newStart = currentStart.in(UnitLookup.EPOCH_NS).subtract(zoomDiff);
-		IQuantity newEnd = currentEnd.in(UnitLookup.EPOCH_NS).add(zoomDiff);
+	private void zoomOut(int steps) {
+		do {
+			if (modifiedSteps != null && modifiedSteps.size() > 0 && modifiedSteps.peek() == zoomSteps) {
+				modifiedSteps.pop();
+				zoomPanPower = zoomPanPower * ZOOM_PAN_MODIFIER;
+			}
+			IQuantity zoomDiff = rangeDuration.multiply(zoomPanPower);
+			IQuantity newStart = currentStart.in(UnitLookup.EPOCH_NS).subtract(zoomDiff);
+			IQuantity newEnd = currentEnd.in(UnitLookup.EPOCH_NS).add(zoomDiff);
 
-		// if zooming out would flow over the recording range start or end time,
-		// calculate the difference and add it to the other side.
-		if (newStart.compareTo(start) < 0) {
-			IQuantity diff = start.subtract(newStart);
-			newStart = start;
-			newEnd = newEnd.add(diff);
-		} else if (newEnd.compareTo(end) > 0) {
-			IQuantity diff = newEnd.subtract(end);
-			newStart = newStart.subtract(diff);
-			newEnd = end;
-		}
-		currentZoom = currentZoom - (zoomPanPower * ZOOM_PAN_MODIFIER * 100);
-		if (currentZoom < 100) {
-			currentZoom = 100;
-		}
-		isZoomCalculated = true;
-		setVisibleRange(newStart, newEnd);
-		zoomSteps--;
+			// if zooming out would flow over the recording range start or end time,
+			// calculate the difference and add it to the other side.
+			if (newStart.compareTo(start) < 0) {
+				IQuantity diff = start.subtract(newStart);
+				newStart = start;
+				newEnd = newEnd.add(diff);
+			} else if (newEnd.compareTo(end) > 0) {
+				IQuantity diff = newEnd.subtract(end);
+				newStart = newStart.subtract(diff);
+				newEnd = end;
+			}
+			currentZoom = currentZoom - (zoomPanPower * ZOOM_PAN_MODIFIER * 100);
+			if (currentZoom < BASE_ZOOM_LEVEL) {
+				currentZoom = BASE_ZOOM_LEVEL;
+			}
+			isZoomCalculated = true;
+			zoomSteps--;
+			setVisibleRange(newStart, newEnd);
+			steps++;
+		} while (steps < 0);
 	}
 
 	// need to check from ChartAndPopupTableUI if not using the OG start/end position,
@@ -544,7 +564,7 @@ public class XYChart {
 	public void resetZoomFactor() {
 		zoomSteps = 0;
 		zoomPanPower = ZOOM_PAN_FACTOR / ZOOM_PAN_MODIFIER;
-		currentZoom = 100;
+		currentZoom = BASE_ZOOM_LEVEL;
 		displayBar.setZoomPercentageText(currentZoom);
 		modifiedSteps = new Stack<Integer>();
 	}
@@ -560,7 +580,7 @@ public class XYChart {
 	private void selectionZoom(IQuantity newStart, IQuantity newEnd) {
 		double percentage = calculateZoom(newStart, newEnd);
 		zoomSteps = calculateZoomSteps(percentage);
-		currentZoom = 100 + (percentage * 100);
+		currentZoom = BASE_ZOOM_LEVEL + (percentage * 100);
 		displayBar.setScaleValue(zoomSteps);
 		displayBar.setZoomPercentageText(currentZoom);
 	}

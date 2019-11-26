@@ -73,7 +73,7 @@ public class ChartDisplayControlBar extends Composite {
 	private static final String ZOOM_OUT_CURSOR = "zoomOutCursor";
 	private static final String DEFAULT_CURSOR = "defaultCursor";
 	private static final String HAND_CURSOR = "handCursor";
-	private static final int ZOOM_AMOUNT = 1;
+	private static final int ZOOM_INCREMENT = 1;
 	private Map<String, Cursor> cursors;
 	private Scale scale;
 	private Text zoomText;
@@ -139,7 +139,7 @@ public class ChartDisplayControlBar extends Composite {
 				}
 			}
 		});
-		zoomInBtn.addMouseListener(new LongPressListener(ZOOM_AMOUNT));
+		zoomInBtn.addMouseListener(new LongPressListener(ZOOM_INCREMENT));
 		buttonGroup.add(zoomInBtn);
 
 		scale = new Scale(this, SWT.VERTICAL);
@@ -148,7 +148,13 @@ public class ChartDisplayControlBar extends Composite {
 		scale.setIncrement(1);
 		scale.setSelection(30);
 		scale.setLayoutData(new GridData(SWT.CENTER, SWT.FILL, true, true));
-		scale.setEnabled(false);
+		scale.addListener(SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event event) {
+				chart.zoomToStep(scale.getMaximum() - scale.getSelection());
+				chartCanvas.redrawChart();
+			}
+		});
 
 		zoomText = new Text(this, SWT.BORDER | SWT.READ_ONLY | SWT.SINGLE);
 		zoomText.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
@@ -175,7 +181,7 @@ public class ChartDisplayControlBar extends Composite {
 				}
 			}
 		});
-		zoomOutBtn.addMouseListener(new LongPressListener(-ZOOM_AMOUNT));
+		zoomOutBtn.addMouseListener(new LongPressListener(-ZOOM_INCREMENT));
 		buttonGroup.add(zoomOutBtn);
 
 		zoomPanBtn = new Button(this, SWT.TOGGLE);
@@ -225,7 +231,7 @@ public class ChartDisplayControlBar extends Composite {
 			if (mouseDown) {
 				chart.clearSelection();
 			} else {
-				int zoomAmount = zoomInBtn.getSelection() ? ZOOM_AMOUNT : -ZOOM_AMOUNT;
+				int zoomAmount = zoomInBtn.getSelection() ? ZOOM_INCREMENT : -ZOOM_INCREMENT;
 				zoom(zoomAmount);
 				if (textCanvas != null) {
 					textCanvas.redrawChartText();
