@@ -33,6 +33,12 @@
  */
 package org.openjdk.jmc.flightrecorder.uitest;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
+
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,6 +51,7 @@ import org.openjdk.jmc.test.jemmy.misc.wrappers.MCButton;
 import org.openjdk.jmc.test.jemmy.misc.wrappers.MCMenu;
 import org.openjdk.jmc.test.jemmy.misc.wrappers.MCTable;
 import org.openjdk.jmc.test.jemmy.misc.wrappers.MCText;
+import org.openjdk.jmc.test.jemmy.misc.wrappers.MCTextCanvas;
 import org.openjdk.jmc.test.jemmy.misc.wrappers.MCToolBar;
 import org.openjdk.jmc.ui.UIPlugin;
 
@@ -67,7 +74,9 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 	private static final String TIME_FILTER_ERROR = org.openjdk.jmc.ui.misc.Messages.TimeFilter_ERROR;
 
 	private static MCChartCanvas chartCanvas;
+	private static MCTextCanvas textCanvas;
 	private static MCTable threadsTable;
+	private boolean selected;
 
 	@Rule
 	public MCUITestRule testRule = new MCUITestRule(verboseRuleOutput) {
@@ -76,13 +85,41 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 			JfrUi.openJfr(materialize("jfr", PLAIN_JFR, JfrThreadsPageTest.class));
 			JfrNavigator.selectTab(JfrUi.Tabs.THREADS);
 			chartCanvas = MCChartCanvas.getChartCanvas();
+			textCanvas = MCTextCanvas.getTextCanvas();
+			selected = false;
 		}
 
 		@Override
 		public void after() {
+			selected = false;
 			MCMenu.closeActiveEditor();
 		}
 	};
+
+	@Test
+	public void testTextCanvasSelection() throws InterruptedException, ExecutionException, TimeoutException {
+		openThreadsTable();
+		threadsTable.selectItems(0, 0);
+		Assert.assertEquals(1, threadsTable.getSelectionCount());
+		closeThreadsTable();
+
+		CompletableFuture<Void> future = new CompletableFuture<>();
+		CompletableFuture.supplyAsync(new Supplier<Void>() {
+
+			@Override
+			public Void get() {
+				textCanvas.setSelectionListener(() -> {
+					selected = !selected;
+					future.complete(null);
+				});
+				textCanvas.clickTextCanvas();
+				return future.join();
+			}
+
+		}).get(10, TimeUnit.SECONDS);
+
+		Assert.assertTrue(selected);
+	}
 
 	@Test
 	public void testZoom() {
