@@ -96,6 +96,7 @@ import org.openjdk.jmc.ui.column.ColumnMenusFactory;
 import org.openjdk.jmc.ui.column.TableSettings;
 import org.openjdk.jmc.ui.handlers.ActionToolkit;
 import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
+import org.openjdk.jmc.ui.misc.DisplayToolkit;
 import org.openjdk.jmc.ui.wizards.IPerformFinishable;
 import org.openjdk.jmc.ui.wizards.OnePageWizardDialog;
 
@@ -318,6 +319,7 @@ public class ThreadsPage extends AbstractDataPage {
 							.collect(Collectors.toList());
 					chartCanvas.setNumItems(this.threadRows.size());
 					textCanvas.setNumItems(this.threadRows.size());
+					DisplayToolkit.inDisplayThread().execute(() -> displayBar.adjustScaleBounds());;
 					this.isChartModified = false;
 					if (this.isChartMenuActionsInit) {
 						setResetChartActionEnablement(false);

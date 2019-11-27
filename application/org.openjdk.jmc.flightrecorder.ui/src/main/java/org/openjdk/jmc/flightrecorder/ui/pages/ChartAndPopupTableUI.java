@@ -94,7 +94,7 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 	protected ChartTextCanvas textCanvas;
 	protected ItemHistogram hiddenTable;
 	protected IPageContainer pageContainer;
-	private ChartDisplayControlBar displayBar;
+	protected ChartDisplayControlBar displayBar;
 	private Composite hiddenTableContainer;
 	private IItemCollection selectionItems;
 	private IItemFilter pageFilter;
