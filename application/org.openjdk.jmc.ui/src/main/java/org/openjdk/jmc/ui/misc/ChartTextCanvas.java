@@ -241,10 +241,6 @@ public class ChartTextCanvas extends Canvas {
 		laneHeight = DEFAULT_LANE_HEIGHT;
 	}
 
-	public void setLaneHeight(int newHeight) {
-		laneHeight = Math.min(Math.max(minLaneheight, DEFAULT_LANE_HEIGHT + newHeight), DEFAULT_LANE_HEIGHT);
-	}
-
 	class KeyNavigator implements KeyListener {
 
 		@Override

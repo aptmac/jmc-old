@@ -74,7 +74,6 @@ public class ChartDisplayControlBar extends Composite {
 	private static final String DEFAULT_CURSOR = "defaultCursor";
 	private static final String HAND_CURSOR = "handCursor";
 	private static final int ZOOM_INCREMENT = 1;
-	private static final int DEFAULT_SCALE_VALUE = 30;
 	private Map<String, Cursor> cursors;
 	private Scale scale;
 	private Text zoomText;
@@ -87,6 +86,7 @@ public class ChartDisplayControlBar extends Composite {
 	private Button selectionBtn;
 	private Button zoomPanBtn;
 	private Button scaleToFitBtn;
+
 	private ZoomPan zoomPan;
 
 	public ChartDisplayControlBar(Composite parent) {
@@ -145,26 +145,14 @@ public class ChartDisplayControlBar extends Composite {
 
 		scale = new Scale(this, SWT.VERTICAL);
 		scale.setMinimum(0);
-		scale.setMaximum(DEFAULT_SCALE_VALUE * 2);
+		scale.setMaximum(30);
 		scale.setIncrement(1);
-		scale.setSelection(DEFAULT_SCALE_VALUE);
+		scale.setSelection(30);
 		scale.setLayoutData(new GridData(SWT.CENTER, SWT.FILL, true, true));
 		scale.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
-				int steps = DEFAULT_SCALE_VALUE - scale.getSelection();
-				if (scale.getSelection() <= DEFAULT_SCALE_VALUE ) {
-					resetLaneHeight();
-					chart.zoomToStep(steps);
-				} else {
-					chart.zoomToStep(0);
-					setZoomPercentageText(100 * ( 2 - ((double) (scale.getSelection() )/((double) DEFAULT_SCALE_VALUE))));
-					chartCanvas.setLaneHeight(steps);
-					if (textCanvas != null) {
-						textCanvas.setLaneHeight(steps);
-						textCanvas.redrawChartText();
-					}
-				}
+				chart.zoomToStep(scale.getMaximum() - scale.getSelection());
 				chartCanvas.redrawChart();
 			}
 		});
@@ -260,7 +248,6 @@ public class ChartDisplayControlBar extends Composite {
 			if (selectionStart == null || selectionEnd == null) {
 				chart.clearVisibleRange();
 			} else {
-				resetLaneHeight();
 				chart.setVisibleRange(selectionStart, selectionEnd);
 				chartCanvas.redrawChart();
 			}
@@ -272,7 +259,7 @@ public class ChartDisplayControlBar extends Composite {
 	}
 
 	public void setScaleValue(int value) {
-		scale.setSelection(DEFAULT_SCALE_VALUE - value);
+		scale.setSelection(scale.getMaximum() - value);
 	}
 
 	public void increaseScaleValue() {
@@ -283,32 +270,10 @@ public class ChartDisplayControlBar extends Composite {
 		scale.setSelection(scale.getSelection() + 1);
 	}
 
-	public void adjustScaleBounds() {
-		int max = canZoomOut() ? DEFAULT_SCALE_VALUE * 2 : DEFAULT_SCALE_VALUE;
-		scale.setMaximum(max);
-		scale.setSelection(DEFAULT_SCALE_VALUE);
-		resetLaneHeight();
-		setZoomPercentageText(100);
-	}
-
-	private boolean canZoomOut() {
-		double totalHeight = chartCanvas.getBounds().height;
-		double visibleHeight =  chartCanvas.getParent().getBounds().height;
-		double ratio = ((double) visibleHeight) / ((double) totalHeight);
-		return ratio <= 0.5;
-	}
-
 	public void resetZoomScale() {
-		scale.setSelection(DEFAULT_SCALE_VALUE);
+		scale.setSelection(scale.getMaximum());
 		setZoomPercentageText(100);
 		resetLaneHeight();
-	}
-
-	private void adjustLaneHeight(int amount) {
-		chartCanvas.adjustLaneHeight(amount);
-		if (textCanvas != null) {
-			textCanvas.adjustLaneHeight(amount);
-		}
 	}
 
 	private void resetLaneHeight() {
@@ -381,15 +346,7 @@ public class ChartDisplayControlBar extends Composite {
 		int newScaleValue = scale.getSelection() - zoomAmount;
 		if (newScaleValue >= scale.getMinimum() && newScaleValue <= scale.getMaximum()) {
 			scale.setSelection(scale.getSelection() - zoomAmount);
-			if (newScaleValue > DEFAULT_SCALE_VALUE) {
-				adjustLaneHeight(zoomAmount);
-				setZoomPercentageText(100 * ( 2 - ((double) (newScaleValue )/((double) DEFAULT_SCALE_VALUE))));
-			} else if (scale.getSelection() + zoomAmount > DEFAULT_SCALE_VALUE) {
-				adjustLaneHeight(zoomAmount);
-				setZoomPercentageText(100);
-			} else {
-				chart.zoom(zoomAmount);
-			}
+			chart.zoom(zoomAmount);
 			chartCanvas.redrawChart();
 		}
 	}
