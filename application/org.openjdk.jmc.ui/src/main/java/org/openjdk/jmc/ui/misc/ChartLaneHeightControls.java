@@ -59,6 +59,7 @@ public class ChartLaneHeightControls extends Composite {
 		decHeightBtn = new Button(this, SWT.PUSH);
 		decHeightBtn.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
 		decHeightBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_MINUS));
+		decHeightBtn.setToolTipText(Messages.ChartLaneHeightControls_LANE_HEIGHT_DECREASE_TOOLTIP);
 		decHeightBtn.addListener(SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event event) {
@@ -68,6 +69,7 @@ public class ChartLaneHeightControls extends Composite {
 
 		incHeightBtn = new Button(this, SWT.PUSH);
 		incHeightBtn.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false, false));
+		incHeightBtn.setToolTipText(Messages.ChartLaneHeightControls_LANE_HEIGHT_INCREASE_TOOLTIP);
 		incHeightBtn.setImage(UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_PLUS));
 		incHeightBtn.addListener(SWT.Selection, new Listener() {
 			@Override
