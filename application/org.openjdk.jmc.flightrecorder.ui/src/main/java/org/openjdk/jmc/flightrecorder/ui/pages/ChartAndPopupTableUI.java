@@ -76,6 +76,7 @@ import org.openjdk.jmc.ui.handlers.ActionToolkit;
 import org.openjdk.jmc.ui.misc.ActionUiToolkit;
 import org.openjdk.jmc.ui.misc.ChartCanvas;
 import org.openjdk.jmc.ui.misc.ChartDisplayControlBar;
+import org.openjdk.jmc.ui.misc.ChartLaneHeightControls;
 import org.openjdk.jmc.ui.misc.ChartTextCanvas;
 import org.openjdk.jmc.ui.misc.PersistableSashForm;
 import org.openjdk.jmc.ui.misc.TimelineCanvas;
@@ -100,6 +101,7 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 	private IItemFilter pageFilter;
 	private IRange<IQuantity> timeRange;
 	private TimelineCanvas timelineCanvas;
+	private ChartLaneHeightControls heightBtns;
 
 	ChartAndPopupTableUI(IItemFilter pageFilter, StreamModel model, Composite parent, FormToolkit toolkit,
 			IPageContainer pageContainer, IState state, String sectionTitle, IItemFilter tableFilter, Image icon,
@@ -131,6 +133,7 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 		 * Chart Container (1 column gridlayout) - Contains filter bar & graph container
 		 * Graph Container (2 column gridlayout) - Contains chart and timeline container & display bar
 		 * Chart and Timeline Container (1 column gridlayout) Contains chart and text container and timeline canvas
+		 * Timeline and Height Buttons Container (2 column gridlayout) Contains timeline and lane height button controls
 		 * Zoom-pan and Chart Container (formlayout) - Contains chart and text container contents and zoom-pan overlay
 		 * Zoom-pan Container (filllayout) - Contains zoom-pan chart overlay
 		 * Full screen Chart Container (1 column gridlayout) - Contains chart container
@@ -249,7 +252,16 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 		scText.setExpandHorizontal(true);
 		scText.setExpandVertical(true);
 
-		timelineCanvas = new TimelineCanvas(chartAndTimelineContainer, chartCanvas, sash, Y_SCALE);
+		Composite timlineAndHeightBtnsContainer = toolkit.createComposite(chartAndTimelineContainer);
+		gridLayout = new GridLayout(2, false);
+		gridLayout.horizontalSpacing = 0;
+		timlineAndHeightBtnsContainer.setLayout(gridLayout);
+		timlineAndHeightBtnsContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+
+		heightBtns = new ChartLaneHeightControls(timlineAndHeightBtnsContainer, chartCanvas, textCanvas);
+		heightBtns.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
+
+		timelineCanvas = new TimelineCanvas(timlineAndHeightBtnsContainer, chartCanvas, sash, Y_SCALE);
 		GridData gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
 		gridData.heightHint = (int) (TIMELINE_HEIGHT * Y_SCALE);
 		timelineCanvas.setLayoutData(gridData);

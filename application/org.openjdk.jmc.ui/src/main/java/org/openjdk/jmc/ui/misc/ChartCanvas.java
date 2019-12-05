@@ -78,7 +78,9 @@ import org.openjdk.jmc.ui.handlers.MCContextMenuManager;
 import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class ChartCanvas extends Canvas {
-	private static int MIN_LANE_HEIGHT = 50;
+	private static final int DEFAULT_LANE_HEIGHT = 50;
+	private int laneHeight = DEFAULT_LANE_HEIGHT;
+	private int minLaneheight = 20;
 	private int lastMouseX = -1;
 	private int lastMouseY = -1;
 	private List<Rectangle2D> highlightRects;
@@ -230,14 +232,15 @@ public class ChartCanvas extends Canvas {
 			Rectangle rect = new Rectangle(0, 0, getParent().getSize().x, getParent().getSize().y);
 			if (getNumItems() == 0) {
 				rect = getClientArea();
-			} else if (getNumItems() == 1 || (MIN_LANE_HEIGHT * getNumItems() < rect.height)) {
+			} else if (getNumItems() == 1 || (laneHeight * getNumItems() < rect.height)) {
 				// it fills the height
 			} else {
-				rect.height = MIN_LANE_HEIGHT * getNumItems();
+				rect.height = laneHeight * getNumItems();
 			}
 
 			if (awtNeedsRedraw || !awtCanvas.hasImage(rect.width, rect.height)) {
 				Graphics2D g2d = awtCanvas.getGraphics(rect.width, rect.height);
+				minLaneheight = Math.max(20, (int) (g2d.getFontMetrics().getHeight() * xScale + 3));
 				Point adjusted = translateDisplayToImageCoordinates(rect.width, rect.height);
 				g2d.setColor(Palette.PF_BLACK_100.getAWTColor());
 				g2d.fillRect(0, 0, adjusted.x, adjusted.y);
@@ -272,6 +275,14 @@ public class ChartCanvas extends Canvas {
 				}
 			}
 		}
+	}
+
+	public void adjustLaneHeight(int amount) {
+		laneHeight = Math.min(Math.max(minLaneheight, laneHeight + amount), DEFAULT_LANE_HEIGHT);
+	}
+
+	public void resetLaneHeight() {
+		laneHeight = DEFAULT_LANE_HEIGHT;
 	}
 
 	class Zoomer implements Listener {

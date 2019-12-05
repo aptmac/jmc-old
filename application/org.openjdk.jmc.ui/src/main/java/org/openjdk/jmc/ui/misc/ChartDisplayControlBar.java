@@ -86,6 +86,7 @@ public class ChartDisplayControlBar extends Composite {
 	private Button selectionBtn;
 	private Button zoomPanBtn;
 	private Button scaleToFitBtn;
+
 	private ZoomPan zoomPan;
 
 	public ChartDisplayControlBar(Composite parent) {
@@ -272,6 +273,14 @@ public class ChartDisplayControlBar extends Composite {
 	public void resetZoomScale() {
 		scale.setSelection(scale.getMaximum());
 		setZoomPercentageText(100);
+		resetLaneHeight();
+	}
+
+	private void resetLaneHeight() {
+		chartCanvas.resetLaneHeight();
+		if (textCanvas != null) {
+			textCanvas.resetLaneHeight();
+		}
 	}
 
 	private void changeCursor(String cursorName) {
