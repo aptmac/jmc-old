@@ -61,7 +61,6 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 	private static final String TABLE_COLUMN_HEADER = "Thread";
 	private static final String OK_BUTTON = "OK";
 	private static final String RESET_BUTTON = "Reset";
-	private static final String FILTER_BUTTON = "Filter";
 	private static final String START_TIME = "08:06:19:489";
 	private static final String NEW_START_TIME = "08:06:19:500";
 	private static final String INVALID_START_TIME = "08:06:19:480";
