@@ -285,6 +285,9 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 		SelectionStoreActionToolkit.addSelectionStoreRangeActions(pageContainer.getSelectionStore(), chart,
 				JfrAttributes.LIFETIME, NLS.bind(Messages.ChartAndTableUI_TIMELINE_SELECTION, form.getText()),
 				chartCanvas.getContextMenu());
+		SelectionStoreActionToolkit.addSelectionStoreRangeActions(pageContainer.getSelectionStore(), chart,
+				JfrAttributes.LIFETIME, NLS.bind(Messages.ChartAndTableUI_TIMELINE_SELECTION, form.getText()),
+				textCanvas.getContextMenu());
 
 		// Wire-up the chart & text canvases to the filter and display bars
 		displayBar.setChart(chart);
