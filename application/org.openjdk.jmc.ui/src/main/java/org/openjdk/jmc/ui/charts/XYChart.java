@@ -636,7 +636,7 @@ public class XYChart {
 	}
 
 	public void setVisibleRange(IQuantity rangeStart, IQuantity rangeEnd) {
-		if (rangeDuration != null && !isZoomCalculated && rangeStart != start && !getIsZoomPanDrag()) {
+		if (rangeDuration != null && !isZoomCalculated && !getIsZoomPanDrag()) {
 			selectionZoom(rangeStart, rangeEnd);
 		}
 		isZoomCalculated = false;

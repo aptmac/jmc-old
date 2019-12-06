@@ -61,7 +61,6 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 	private static final String TABLE_COLUMN_HEADER = "Thread";
 	private static final String OK_BUTTON = "OK";
 	private static final String RESET_BUTTON = "Reset";
-	private static final String FILTER_BUTTON = "Filter";
 	private static final String START_TIME = "08:06:19:489";
 	private static final String NEW_START_TIME = "08:06:19:500";
 	private static final String INVALID_START_TIME = "08:06:19:480";
@@ -152,13 +151,11 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 	public void testResetButtons() {
 		MCText StartTimeField = MCText.getByText(START_TIME);
 		MCText zoomDisplay = MCText.getByText(DEFAULT_ZOOM);
-		MCButton filterBtn = MCButton.getByLabel(FILTER_BUTTON);
 		MCButton resetBtn = MCButton.getByLabel(RESET_BUTTON);
 		MCButton scaleToFitBtn = MCButton.getByImage(
 				UIPlugin.getDefault().getImage(UIPlugin.ICON_FA_SCALE_TO_FIT));
 
 		StartTimeField.setText(NEW_START_TIME);
-		filterBtn.click();
 		Assert.assertNotEquals(START_TIME, StartTimeField.getText());
 		Assert.assertNotEquals(zoomDisplay.getText(), DEFAULT_ZOOM);
 
@@ -167,7 +164,6 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 		Assert.assertEquals(zoomDisplay.getText(), DEFAULT_ZOOM);
 
 		StartTimeField.setText(NEW_START_TIME);
-		filterBtn.click();
 		Assert.assertNotEquals(START_TIME, StartTimeField.getText());
 		Assert.assertNotEquals(zoomDisplay.getText(), DEFAULT_ZOOM);
 
@@ -180,11 +176,9 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 	public void testTimeFilterInvalid() {
 		MCText startTimeField = MCText.getByText(START_TIME);
 		MCText endTimeField = MCText.getByText(START_TIME);
-		MCButton filterBtn = MCButton.getByLabel(FILTER_BUTTON);
 		MCButton resetBtn = MCButton.getByLabel(RESET_BUTTON);
 
 		startTimeField.setText(INVALID_START_TIME);
-		filterBtn.click();
 		MCButton okButton = MCButton.getByLabel(TIME_FILTER_ERROR, OK_BUTTON);
 		Assert.assertNotNull(okButton);
 		okButton.click();
@@ -194,7 +188,6 @@ public class JfrThreadsPageTest extends MCJemmyTestBase {
 		Assert.assertEquals(START_TIME, startTimeField.getText());
 
 		endTimeField.setText(INVALID_END_TIME);
-		filterBtn.click();
 		okButton = MCButton.getByLabel(TIME_FILTER_ERROR, OK_BUTTON);
 		Assert.assertNotNull(okButton);
 		okButton.click();
