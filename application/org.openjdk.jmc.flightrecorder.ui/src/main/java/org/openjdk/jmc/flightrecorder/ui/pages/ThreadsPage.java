@@ -52,6 +52,7 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Item;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.openjdk.jmc.common.IMCThread;
@@ -174,23 +175,27 @@ public class ThreadsPage extends AbstractDataPage {
 		private Boolean isChartMenuActionsInit;
 		private Boolean isChartModified;
 		private Boolean reloadThreads;
-		private IAction hideThreadAction;
+		private IAction hideThreadActionChart;
+		private IAction hideThreadActionText;
 		private IAction resetChartAction;
 		private List<IXDataRenderer> threadRows;
-		private MCContextMenuManager mm;
+		private MCContextMenuManager mmChart;
+		private MCContextMenuManager mmText;
 		private ThreadGraphLanes lanes;
 		private DropdownLaneFilter laneFilter;
 
 		ThreadsPageUi(Composite parent, FormToolkit toolkit, IPageContainer editor, IState state) {
 			super(pageFilter, getDataSource(), parent, toolkit, editor, state, getName(), pageFilter, getIcon(),
 					flavorSelectorState);
-			mm = (MCContextMenuManager) chartCanvas.getContextMenu();
+			mmChart = (MCContextMenuManager) chartCanvas.getContextMenu();
+			mmText = (MCContextMenuManager) textCanvas.getContextMenu();
 			sash.setOrientation(SWT.HORIZONTAL);
-			addActionsToContextMenu(mm);
+			addActionsToContextMenu();
 			// FIXME: The lanes field is initialized by initializeChartConfiguration which is called by the super constructor. This is too indirect for SpotBugs to resolve and should be simplified.
-			lanes.updateContextMenu(mm, false);
+			MCContextMenuManager[] mms = {mmChart, mmText};
+			lanes.updateContextMenus(mms, false);
 			form.getToolBarManager()
-					.add(ActionToolkit.action(() -> lanes.openEditLanesDialog(mm, false), Messages.ThreadsPage_EDIT_LANES,
+					.add(ActionToolkit.action(() -> lanes.openEditLanesDialog(mms, false), Messages.ThreadsPage_EDIT_LANES,
 							FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_LANES_EDIT)));
 			form.getToolBarManager()
 					.add(ActionToolkit.action(() -> openViewThreadDetailsDialog(state), Messages.ThreadsPage_VIEW_THREAD_DETAILS,
@@ -204,7 +209,8 @@ public class ThreadsPage extends AbstractDataPage {
 		}
 
 		private void setupFilterBar() {
-			laneFilter = new DropdownLaneFilter(filterBar, lanes, mm);
+			MCContextMenuManager[] mms = {mmChart, mmText};
+			laneFilter = new DropdownLaneFilter(filterBar, lanes, mms);
 			laneFilter.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
 			filterBar.setChart(chart);
 			filterBar.setChartCanvas(chartCanvas);
@@ -252,15 +258,24 @@ public class ThreadsPage extends AbstractDataPage {
 		/**
 		 * Update the context menu to include actions to hide threads and reset the chart
 		 */
-		private void addActionsToContextMenu(MCContextMenuManager mm) {
-			mm.add(new Separator());
-
-			IAction hideThreadAction = ActionToolkit.action(() -> this.hideThread(chartCanvas.getHoveredItemData()),
+		private void addActionsToContextMenu() {
+			mmChart.add(new Separator());
+			IAction hideThreadActionChart = ActionToolkit.action(() -> this.hideThread(chartCanvas.getHoveredItemData()),
 					Messages.ThreadsPage_HIDE_THREAD_ACTION,
 					UIPlugin.getDefault().getMCImageDescriptor(UIPlugin.ICON_DELETE));
-			hideThreadAction.setId(HIDE_THREAD);
-			this.hideThreadAction = hideThreadAction;
-			mm.add(hideThreadAction);
+
+			hideThreadActionChart.setId(HIDE_THREAD);
+			this.hideThreadActionChart = hideThreadActionChart;
+			mmChart.add(hideThreadActionChart);
+
+			mmText.add(new Separator());
+			IAction hideThreadActionText = ActionToolkit.action(() -> this.hideThread(textCanvas.getHoveredItemData()),
+					Messages.ThreadsPage_HIDE_THREAD_ACTION,
+					UIPlugin.getDefault().getMCImageDescriptor(UIPlugin.ICON_DELETE));
+
+			hideThreadActionText.setId(HIDE_THREAD);
+			this.hideThreadActionText = hideThreadActionText;
+			mmText.add(hideThreadActionText);
 
 			IAction resetChartAction = ActionToolkit.action(() -> this.resetChartToSelection(),
 					Messages.ThreadsPage_RESET_CHART_TO_SELECTION_ACTION,
@@ -268,7 +283,9 @@ public class ThreadsPage extends AbstractDataPage {
 			resetChartAction.setId(RESET_CHART);
 			resetChartAction.setEnabled(this.isChartModified);
 			this.resetChartAction = resetChartAction;
-			mm.add(resetChartAction);
+
+			mmChart.add(resetChartAction);
+			mmText.add(resetChartAction);
 
 			this.isChartMenuActionsInit = true;
 		}
@@ -284,8 +301,10 @@ public class ThreadsPage extends AbstractDataPage {
 		}
 
 		private void setHideThreadActionEnablement(Boolean enabled) {
-			this.hideThreadAction.setEnabled(enabled);
+			this.hideThreadActionChart.setEnabled(enabled);
+			this.hideThreadActionText.setEnabled(enabled);
 		}
+
 		private void setResetChartActionEnablement(Boolean enabled) {
 			this.resetChartAction.setEnabled(enabled);
 		}
@@ -351,6 +370,7 @@ public class ThreadsPage extends AbstractDataPage {
 		public void saveTo(IWritableState state) {
 			super.saveTo(state);
 			saveToLocal();
+			Display.getCurrent().setData(NO_INPUT_METHOD, null);
 		}
 
 		private void saveToLocal() {
@@ -436,6 +456,7 @@ public class ThreadsPage extends AbstractDataPage {
 		}
 	}
 
+	private static final String NO_INPUT_METHOD = "org.eclipse.swt.internal.gtk.noInputMethod"; //$NON-NLS-1$
 	private Object[] selectionInput;
 	private FlavorSelectorState flavorSelectorState;
 	private SelectionState histogramSelectionState;
@@ -445,6 +466,7 @@ public class ThreadsPage extends AbstractDataPage {
 	public ThreadsPage(IPageDefinition definition, StreamModel model, IPageContainer editor) {
 		super(definition, model, editor);
 		visibleRange = editor.getRecordingRange();
+		Display.getCurrent().setData(NO_INPUT_METHOD, true);
 	}
 
 	@Override

@@ -71,6 +71,8 @@ public class ChartTextCanvas extends Canvas {
 	private int laneHeight = DEFAULT_LANE_HEIGHT;
 	private int minLaneheight = 20;
 	private int numItems;
+	private int lastMouseX = -1;
+	private int lastMouseY = -1;
 	private List<Rectangle2D> highlightRects;
 
 	private class Selector extends MouseAdapter implements MouseMoveListener, MouseTrackListener {
@@ -154,6 +156,8 @@ public class ChartTextCanvas extends Canvas {
 				highlightRects = null;
 				updateSelectionState(e);
 			} else {
+				lastMouseX = e.x;
+				lastMouseY = e.y;
 				updateHighlightRects();
 			}
 		}
@@ -189,6 +193,9 @@ public class ChartTextCanvas extends Canvas {
 
 		@Override
 		public void mouseExit(MouseEvent e) {
+			if (!getClientArea().contains(e.x, e.y)) {
+				resetHoveredItemData();
+			}
 			clearHighlightRects();
 		}
 
@@ -294,6 +301,7 @@ public class ChartTextCanvas extends Canvas {
 	private XYChart awtChart;
 	private ChartCanvas chartCanvas;
 	private MCContextMenuManager chartMenu;
+	private Object hoveredItemData;
 
 	public ChartTextCanvas(Composite parent) {
 		super(parent, SWT.NO_BACKGROUND);
@@ -330,6 +338,17 @@ public class ChartTextCanvas extends Canvas {
 			awtChart.renderTextCanvasText(context, width);
 		}
 	}
+	public Object getHoveredItemData() {
+		return this.hoveredItemData;
+	}
+
+	public void setHoveredItemData(Object data) {
+		this.hoveredItemData = data;
+	}
+
+	public void resetHoveredItemData() {
+		this.hoveredItemData = null;
+	}
 
 	public void syncHighlightedRectangles (List<Rectangle2D> newRects) {
 		highlightRects = newRects;
@@ -337,6 +356,14 @@ public class ChartTextCanvas extends Canvas {
 	}
 
 	private void updateHighlightRects() {
+		infoAt(new IChartInfoVisitor.Adapter() {
+			@Override
+			public void hover(Object data) {
+				if (data != null) {
+					setHoveredItemData(data);
+				}
+			}
+		}, lastMouseX, lastMouseY);
 		redraw();
 		if (chartCanvas != null) {
 			chartCanvas.syncHighlightedRectangles(highlightRects);

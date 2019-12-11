@@ -124,6 +124,17 @@ public class ThreadGraphLanes {
 		buildChart.run();
 	}
 
+	public void openEditLanesDialog(MCContextMenuManager[] mms, boolean isLegendMenu) {
+		// FIXME: Might there be other interesting events that don't really have duration?
+		typeTree = dataSourceSupplier.get().getTypeTree(ItemCollectionToolkit
+				.stream(dataSourceSupplier.get().getItems()).filter(this::typeWithThreadAndDuration));
+		laneDefs = LaneEditor.openDialog(typeTree, laneDefs.stream().collect(Collectors.toList()),
+				Messages.JavaApplicationPage_EDIT_THREAD_LANES_DIALOG_TITLE,
+				Messages.JavaApplicationPage_EDIT_THREAD_LANES_DIALOG_MESSAGE);
+		updateContextMenus(mms, isLegendMenu);
+		buildChart.run();
+	}
+
 	public List<LaneDefinition> getLaneDefinitions() {
 		return laneDefs;
 	}
@@ -296,14 +307,66 @@ public class ThreadGraphLanes {
 	private List<String> chartActionIdentifiers = new ArrayList<>();
 	private List<String> legendActionIdentifiers = new ArrayList<>();
 
+	public void updateContextMenus(MCContextMenuManager[] mms, boolean isLegendMenu) {
+		if (isLegendMenu) {
+			for (String id : legendActionIdentifiers) {
+				for (MCContextMenuManager mm : mms ) {
+					mm.remove(id);
+				}
+			}
+			legendActionIdentifiers.clear();
+		} else {
+			for (String id : chartActionIdentifiers) {
+				for (MCContextMenuManager mm : mms ) {
+					mm.remove(id);
+				}
+			}
+			chartActionIdentifiers.clear();
+		}
+		if (mms[0].indexOf(EDIT_LANES) == -1) {
+			IAction action = ActionToolkit.action(() -> this.openEditLanesDialog(mms, isLegendMenu),
+					Messages.JavaApplicationPage_EDIT_THREAD_LANES_ACTION,
+					FlightRecorderUI.getDefault().getMCImageDescriptor(ImageConstants.ICON_LANES_EDIT));
+			action.setId(EDIT_LANES);
+			for (MCContextMenuManager mm : mms) {
+				mm.add(action);
+				mm.add(new Separator());
+			}
+			actions.add(action);
+		}
+		laneDefs.stream().forEach(ld -> {
+			Action checkAction = new Action(ld.getName(), IAction.AS_CHECK_BOX) {
+				int laneIndex = laneDefs.indexOf(ld);
+
+				@Override
+				public void run() {
+					setLaneDefinitionEnablement(ld, laneIndex, isChecked());
+					buildChart.run();
+				}
+			};
+			String identifier = ld.getName() + checkAction.hashCode();
+			checkAction.setId(identifier);
+			if(isLegendMenu) {
+				legendActionIdentifiers.add(identifier);
+			} else {
+				chartActionIdentifiers.add(identifier);
+			}
+			checkAction.setChecked(ld.isEnabled());
+			// FIXME: Add a tooltip here
+			for (MCContextMenuManager mm : mms ) {
+				mm.add(checkAction);
+			}
+			actions.add(checkAction);
+		});
+	}
+
 	public void updateContextMenu(MCContextMenuManager mm, boolean isLegendMenu) {
-		
-		if(isLegendMenu) {
+		if (isLegendMenu) {
 			for (String id : legendActionIdentifiers) {
 				mm.remove(id);
 			}
 			legendActionIdentifiers.clear();
-		} else { 	
+		} else {
 			for (String id : chartActionIdentifiers) {
 				mm.remove(id);
 			}

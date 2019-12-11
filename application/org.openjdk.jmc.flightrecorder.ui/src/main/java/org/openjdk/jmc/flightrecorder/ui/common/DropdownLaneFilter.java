@@ -58,16 +58,16 @@ public class DropdownLaneFilter extends Composite {
 	private static final int SHELL_HEIGHT = 400;
 	private Button dropdownButton;
 	private GridLayout layout;
-	private MCContextMenuManager mm;
+	private MCContextMenuManager[] mms;
 	private Shell shell;
 	private ShellAdapter shellDisposeAdapter;
 	private ThreadGraphLanes lanes;
 	private TypeFilterBuilder filterEditor;
 
-	public DropdownLaneFilter(Composite parent, ThreadGraphLanes lanes, MCContextMenuManager mm) {
+	public DropdownLaneFilter(Composite parent, ThreadGraphLanes lanes, MCContextMenuManager[] mms) {
 		super(parent, SWT.NONE);
 		this.lanes = lanes;
-		this.mm = mm;
+		this.mms = mms;
 		this.setBackground(Palette.PF_BLACK_300.getSWTColor());
 		this.layout = createGridLayout();
 		this.shellDisposeAdapter = new ShellAdapter() {
@@ -140,6 +140,6 @@ public class DropdownLaneFilter extends Composite {
 		LaneDefinition quickLaneDef = new LaneDefinition(Messages.DropdownLaneFilter_QUICK_FILTER, true,
 					ItemFilters.type(filterEditor.getCheckedTypeIds().collect(Collectors.toSet())), false);
 		lanes.useDropdownFilter(quickLaneDef);
-		lanes.updateContextMenu(mm, false);
+		lanes.updateContextMenus(mms, false);
 	}
 }
