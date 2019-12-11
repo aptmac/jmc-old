@@ -88,7 +88,6 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 	private static final String TABLE = "table"; //$NON-NLS-1$
 	private static final String CHART = "chart"; //$NON-NLS-1$
 	private static final String SELECTED = "selected"; //$NON-NLS-1$
-	private static final String NO_INPUT_METHOD = "org.eclipse.swt.internal.gtk.noInputMethod"; //$NON-NLS-1$
 	private static final int TIMELINE_HEIGHT = 40;
 	private static final int X_OFFSET = 0;
 	private static final int Y_OFFSET = 0;
@@ -116,7 +115,6 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 		this.pageFilter = pageFilter;
 		this.model = model;
 		this.pageContainer = pageContainer;
-		Display.getCurrent().setData(NO_INPUT_METHOD, true);
 		form = DataPageToolkit.createForm(parent, toolkit, sectionTitle, icon);
 
 		hiddenTableContainer = new Composite(form, SWT.NONE);

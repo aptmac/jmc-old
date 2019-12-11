@@ -52,6 +52,7 @@ import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Item;
 import org.eclipse.ui.forms.widgets.FormToolkit;
 import org.openjdk.jmc.common.IMCThread;
@@ -369,6 +370,7 @@ public class ThreadsPage extends AbstractDataPage {
 		public void saveTo(IWritableState state) {
 			super.saveTo(state);
 			saveToLocal();
+			Display.getCurrent().setData(NO_INPUT_METHOD, null);
 		}
 
 		private void saveToLocal() {
@@ -454,6 +456,7 @@ public class ThreadsPage extends AbstractDataPage {
 		}
 	}
 
+	private static final String NO_INPUT_METHOD = "org.eclipse.swt.internal.gtk.noInputMethod"; //$NON-NLS-1$
 	private Object[] selectionInput;
 	private FlavorSelectorState flavorSelectorState;
 	private SelectionState histogramSelectionState;
@@ -463,6 +466,7 @@ public class ThreadsPage extends AbstractDataPage {
 	public ThreadsPage(IPageDefinition definition, StreamModel model, IPageContainer editor) {
 		super(definition, model, editor);
 		visibleRange = editor.getRecordingRange();
+		Display.getCurrent().setData(NO_INPUT_METHOD, true);
 	}
 
 	@Override
