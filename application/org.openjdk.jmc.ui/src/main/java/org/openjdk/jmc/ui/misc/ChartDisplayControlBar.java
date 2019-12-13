@@ -226,6 +226,10 @@ public class ChartDisplayControlBar extends Composite {
 		this.textCanvas = textCanvas;
 	}
 
+	public void updateZoomPanIndicator() {
+		zoomPan.redraw();
+	}
+
 	public void zoomOnClick(Boolean mouseDown) {
 		boolean shouldZoom = zoomInBtn.getSelection() || zoomOutBtn.getSelection() ;
 		if (shouldZoom) {

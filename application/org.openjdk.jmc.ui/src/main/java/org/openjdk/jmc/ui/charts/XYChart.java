@@ -205,11 +205,18 @@ public class XYChart {
 		
 		if (timelineCanvas != null) {
 			timelineCanvas.renderRangeIndicator(x1, x2);
+			updateZoomPanIndicator();
 		} else {
 			context.setPaint(RANGE_INDICATION_COLOR);
 			context.fillRect(x1, rangeIndicatorY, x2 - x1, RANGE_INDICATOR_HEIGHT);
 			context.setPaint(Color.DARK_GRAY);
 			context.drawRect(0, rangeIndicatorY, axisWidth - 1, RANGE_INDICATOR_HEIGHT);
+		}
+	}
+
+	public void updateZoomPanIndicator() {
+		if (displayBar != null) {
+			displayBar.updateZoomPanIndicator();
 		}
 	}
 

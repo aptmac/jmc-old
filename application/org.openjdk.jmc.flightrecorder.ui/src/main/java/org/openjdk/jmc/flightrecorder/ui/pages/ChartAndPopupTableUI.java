@@ -252,16 +252,16 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 		scText.setExpandHorizontal(true);
 		scText.setExpandVertical(true);
 
-		Composite timlineAndHeightBtnsContainer = toolkit.createComposite(chartAndTimelineContainer);
+		Composite timelineAndHeightBtnsContainer = toolkit.createComposite(chartAndTimelineContainer);
 		gridLayout = new GridLayout(2, false);
 		gridLayout.horizontalSpacing = 0;
-		timlineAndHeightBtnsContainer.setLayout(gridLayout);
-		timlineAndHeightBtnsContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		timelineAndHeightBtnsContainer.setLayout(gridLayout);
+		timelineAndHeightBtnsContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 
-		heightBtns = new ChartLaneHeightControls(timlineAndHeightBtnsContainer, chartCanvas, textCanvas);
+		heightBtns = new ChartLaneHeightControls(timelineAndHeightBtnsContainer, chartCanvas, textCanvas);
 		heightBtns.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
 
-		timelineCanvas = new TimelineCanvas(timlineAndHeightBtnsContainer, chartCanvas, sash, Y_SCALE);
+		timelineCanvas = new TimelineCanvas(timelineAndHeightBtnsContainer, chartCanvas, sash, Y_SCALE);
 		GridData gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
 		gridData.heightHint = (int) (TIMELINE_HEIGHT * Y_SCALE);
 		timelineCanvas.setLayoutData(gridData);

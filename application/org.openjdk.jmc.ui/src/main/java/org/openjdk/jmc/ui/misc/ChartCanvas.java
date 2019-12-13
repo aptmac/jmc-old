@@ -456,6 +456,7 @@ public class ChartCanvas extends Canvas {
 		if (textCanvas != null) {
 			Point location = ((ScrolledComposite) getParent()).getOrigin();
 			textCanvas.syncScroll(location);
+			awtChart.updateZoomPanIndicator();
 		}
 	}
 
@@ -473,6 +474,7 @@ public class ChartCanvas extends Canvas {
 			if (textCanvas == null) {
 				awtChart.renderText(context, width, height);
 			}
+			awtChart.updateZoomPanIndicator();
 		}
 	}
 
