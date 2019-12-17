@@ -44,9 +44,11 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
+
 import org.openjdk.jmc.common.item.ItemFilters;
 import org.openjdk.jmc.flightrecorder.ui.common.LaneEditor.LaneDefinition;
 import org.openjdk.jmc.flightrecorder.ui.messages.internal.Messages;
@@ -60,7 +62,6 @@ public class DropdownLaneFilter extends Composite {
 	private GridLayout layout;
 	private MCContextMenuManager[] mms;
 	private Shell shell;
-	private ShellAdapter shellDisposeAdapter;
 	private ThreadGraphLanes lanes;
 	private TypeFilterBuilder filterEditor;
 
@@ -69,48 +70,51 @@ public class DropdownLaneFilter extends Composite {
 		this.lanes = lanes;
 		this.mms = mms;
 		this.setBackground(Palette.PF_BLACK_300.getSWTColor());
-		this.layout = createGridLayout();
-		this.shellDisposeAdapter = new ShellAdapter() {
-			public void shellDeactivated(ShellEvent event) {
-				if (dropdownButton.isDisposed()) { return; }
-				if (dropdownButton.getSelection()) {
-					disposeDropdown();
-					dropdownButton.setSelection(false);
-				}
-			}
-		};
+		GridLayout layout = new GridLayout();
+		layout.marginHeight = 0;
+		layout.marginWidth = 0;
+		this.layout = layout;
 		setLayout(layout);
 		dropdownButton = new Button(this, SWT.TOGGLE);
 		dropdownButton.setLayoutData(new GridData(GridData.FILL_BOTH));
 		dropdownButton.setText(Messages.DropdownLaneFilter_THREAD_STATE_SELECTION);
-		dropdownButton.addListener(SWT.MouseDown, new Listener() {
+		dropdownButton.addListener(SWT.MouseUp, new Listener() {
 			@Override
-			public void handleEvent(Event event) {
-				if (!dropdownButton.getSelection()) {
+			public void handleEvent(Event e) {
+				if (dropdownButton.getSelection()) {
 					displayDropdown();
-				} else {
-					disposeDropdown();
 				}
 			}
 		});
 	}
 
 	/**
-	 * Creates a new shell which is positioned underneath the dropdown button.
+	 * Creates a new shell which is positioned below the dropdown button.
 	 * This new shell creates the appearance of a dropdown component, and it's
 	 * contents will be the TypeFilterBuilder as found in the Edit Thread Lanes
 	 * dialog.
 	 */
-	private void displayDropdown() {
+	private synchronized void displayDropdown() {
 		Point p = dropdownButton.getParent().toDisplay(dropdownButton.getLocation());
 		Point size = dropdownButton.getSize();
 		Rectangle shellRect = new Rectangle(p.x, p.y + size.y, size.x, 0);
 
 		shell = new Shell(DropdownLaneFilter.this.getShell(), SWT.BORDER);
+		shell.addShellListener(new ShellAdapter() {
+
+			public void shellDeactivated(ShellEvent e) {
+				if (!isCursorOnTopOfButton()) {
+					// If the shell is closed without clicking the button (i.e., not forcing
+					// a toggle), then the button must be toggled programmatically.
+					dropdownButton.setSelection(false);
+				}
+				disposeDropdown();
+			}
+		});
+
 		shell.setLayout(this.layout);
 		shell.setSize(shellRect.width + EXTRA_SHELL_WIDTH, SHELL_HEIGHT);
 		shell.setLocation(shellRect.x, shellRect.y);
-		shell.addShellListener(this.shellDisposeAdapter);
 
 		filterEditor = new TypeFilterBuilder(shell, this::onTypeFilterChange);
 		filterEditor.setInput(lanes.getTypeTree());
@@ -119,17 +123,28 @@ public class DropdownLaneFilter extends Composite {
 		shell.open();
 	}
 
-	private void disposeDropdown() {
+	private synchronized void disposeDropdown() {
 		if (shell != null && !shell.isDisposed()) {
-			shell.dispose();
+			shell.close();
 		}
 	}
 
-	private GridLayout createGridLayout() {
-		GridLayout layout = new GridLayout();
-		layout.marginHeight = 0;
-		layout.marginWidth = 0;
-		return layout;
+	/**
+	 * Determine whether or not the mouse cursor is overlapping the dropdown button.
+	 *
+	 * An open dropdown shell should close when the user clicks the button. In Linux, the MouseListener
+	 * on the button will fire. In Windows, the shell has priority and the MouseListener doesn't get activated.
+	 *
+	 * This function is to be used in the ShellAdapter to determine if the user closed the shell by
+	 * trying to click the button, or by clicking away from the dropdown shell.
+	 *
+	 * @return true if the mouse cursor is on top of the button
+	 */
+	private boolean isCursorOnTopOfButton() {
+		Point cursor = Display.getCurrent().getCursorLocation();
+		Point buttonLoc = dropdownButton.toDisplay(1, 1);
+		Rectangle buttonRect = new Rectangle(buttonLoc.x, buttonLoc.y, dropdownButton.getSize().x, dropdownButton.getSize().y);
+		return buttonRect.contains(cursor);
 	}
 
 	/**
