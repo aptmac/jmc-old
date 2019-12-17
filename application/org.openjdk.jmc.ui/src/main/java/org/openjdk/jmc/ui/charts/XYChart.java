@@ -180,10 +180,10 @@ public class XYChart {
 		}
 	}
 
-	public void renderTextCanvasText(Graphics2D context, int width) {
+	public void renderTextCanvasText(Graphics2D context, int width, int height) {
 		axisWidth = width;
 		AffineTransform oldTransform = context.getTransform();
-		doRenderTextCanvasText(context);
+		doRenderTextCanvasText(context, height);
 		context.setTransform(oldTransform);
 	}
 
@@ -220,6 +220,17 @@ public class XYChart {
 		}
 	}
 
+	private IRenderedRow getRendererResult(Graphics2D context, int axisHeight) {
+		if (xBucketRange == null) {
+			xBucketRange = getXBucketRange();
+		}
+		return rendererRoot.render(context, xBucketRange, axisHeight);
+	}
+
+	private SubdividedQuantityRange getXBucketRange() {
+		return new SubdividedQuantityRange(currentStart, currentEnd, axisWidth, bucketWidth);
+	}
+
 	private void doRenderChart(Graphics2D context, int axisHeight) {
 		rowColorCounter = 0;
 		context.setPaint(Color.LIGHT_GRAY);
@@ -232,7 +243,7 @@ public class XYChart {
 			AWTChartToolkit.drawAxis(context, xTickRange, axisHeight - 1, false, 1 - xOffset, false);
 		}
 		// ... then the graph ...
-		rendererResult = rendererRoot.render(context, xBucketRange, axisHeight);
+		rendererResult = getRendererResult(context, axisHeight);
 		AffineTransform oldTransform = context.getTransform();
 
 		context.setTransform(oldTransform);
@@ -253,7 +264,10 @@ public class XYChart {
 		context.setTransform(oldTransform);
 	}
 
-	private void doRenderTextCanvasText(Graphics2D context) {
+	private void doRenderTextCanvasText(Graphics2D context, int height) {
+		if (rendererResult == null) {
+			rendererResult = getRendererResult(context, height - yOffset);
+		}
 		AffineTransform oldTransform = context.getTransform();
 		rowColorCounter = 0;
 		renderText(context, rendererResult);
