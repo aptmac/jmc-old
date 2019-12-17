@@ -94,7 +94,7 @@ public class ChartDisplayControlBar extends Composite {
 
 		this.setLayout(new GridLayout());
 		this.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
-		this.setBackground(Palette.PF_BLACK_300.getSWTColor());
+		this.setBackground(Palette.getThreadsPageBackgroundColor());
 
 		cursors = new HashMap<>();
 		cursors.put(DEFAULT_CURSOR, getDisplay().getSystemCursor(SWT.CURSOR_ARROW));
