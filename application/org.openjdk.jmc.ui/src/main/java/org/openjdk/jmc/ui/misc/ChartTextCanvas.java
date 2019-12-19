@@ -335,7 +335,7 @@ public class ChartTextCanvas extends Canvas {
 
 	private void render(Graphics2D context, int width, int height) {
 		if (awtChart != null) {
-			awtChart.renderTextCanvasText(context, width);
+			awtChart.renderTextCanvasText(context, width, height);
 		}
 	}
 	public Object getHoveredItemData() {
