@@ -56,10 +56,10 @@ public class ChartFilterControlBar extends Composite {
 	public ChartFilterControlBar(Composite parent, Listener resetListener, IRange<IQuantity> recordingRange) {
 		super(parent, SWT.NONE);
 		this.setLayout(new GridLayout(3, false));
-		this.setBackground(Palette.PF_BLACK_300.getSWTColor());
+		this.setBackground(Palette.getThreadsPageBackgroundColor());
 		Label nameLabel = new Label(this, SWT.CENTER | SWT.HORIZONTAL);
 		nameLabel.setText(THREADS_LABEL);
-		nameLabel.setBackground(Palette.PF_BLACK_300.getSWTColor());
+		nameLabel.setBackground(Palette.getThreadsPageBackgroundColor());
 		GridData gd = new GridData(SWT.FILL, SWT.CENTER, false, true);
 		gd.widthHint = 180;
 		nameLabel.setLayoutData(gd);

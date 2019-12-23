@@ -255,6 +255,7 @@ abstract class ChartAndPopupTableUI extends ChartAndTableUI {
 		Composite timelineAndHeightBtnsContainer = toolkit.createComposite(chartAndTimelineContainer);
 		gridLayout = new GridLayout(2, false);
 		gridLayout.horizontalSpacing = 0;
+		gridLayout.marginWidth = 0;
 		timelineAndHeightBtnsContainer.setLayout(gridLayout);
 		timelineAndHeightBtnsContainer.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 

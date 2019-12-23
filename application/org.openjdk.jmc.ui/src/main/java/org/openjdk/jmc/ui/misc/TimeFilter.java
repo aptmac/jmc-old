@@ -68,22 +68,22 @@ public class TimeFilter extends Composite {
 	public TimeFilter(Composite parent, IRange<IQuantity> recordingRange, Listener resetListener) {
 		super(parent, SWT.NONE);
 		this.recordingRange = recordingRange;
-		this.setBackground(Palette.PF_BLACK_300.getSWTColor());
+		this.setBackground(Palette.getThreadsPageBackgroundColor());
 		this.setLayout(new GridLayout(7, false));
 		Label eventsLabel = new Label(this, SWT.LEFT);
 		eventsLabel.setText(Messages.TimeFilter_FILTER_EVENTS);
 		eventsLabel.setFont(JFaceResources.getFontRegistry().get(JFaceResources.BANNER_FONT));
-		eventsLabel.setBackground(Palette.PF_BLACK_300.getSWTColor());
+		eventsLabel.setBackground(Palette.getThreadsPageBackgroundColor());
 
 		Label fromLabel = new Label(this, SWT.CENTER);
 		fromLabel.setText(Messages.TimeFilter_FROM);
-		fromLabel.setBackground(Palette.PF_BLACK_300.getSWTColor());
+		fromLabel.setBackground(Palette.getThreadsPageBackgroundColor());
 
 		startDisplay = new TimeDisplay(this);
 
 		Label toLabel = new Label(this, SWT.CENTER);
 		toLabel.setText(Messages.TimeFilter_TO);
-		toLabel.setBackground(Palette.PF_BLACK_300.getSWTColor());
+		toLabel.setBackground(Palette.getThreadsPageBackgroundColor());
 
 		endDisplay = new TimeDisplay(this);
 
@@ -153,7 +153,7 @@ public class TimeFilter extends Composite {
 
 		public TimeDisplay(TimeFilter parent) {
 			super(parent, SWT.NONE);
-			this.setBackground(Palette.PF_BLACK_300.getSWTColor());
+			this.setBackground(Palette.getThreadsPageBackgroundColor());
 			this.setLayout(new GridLayout());
 			timeText = new Text(this, SWT.SEARCH | SWT.SINGLE);
 			timeText.setTextLimit(12);

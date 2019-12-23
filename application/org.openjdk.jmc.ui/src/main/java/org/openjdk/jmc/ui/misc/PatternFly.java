@@ -33,6 +33,7 @@
  */
 package org.openjdk.jmc.ui.misc;
 
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.widgets.Display;
 
 public class PatternFly {
@@ -190,6 +191,13 @@ public class PatternFly {
 		 */
 		public org.eclipse.swt.graphics.Color getSWTColor() {
 			return (org.eclipse.swt.graphics.Color) parseRGB(SWT);
+		}
+
+		/**
+		 * Page & Component Specific Colors
+		 */
+		public static Color getThreadsPageBackgroundColor() {
+			return PF_BLACK_200.getSWTColor();
 		}
 	}
 }
