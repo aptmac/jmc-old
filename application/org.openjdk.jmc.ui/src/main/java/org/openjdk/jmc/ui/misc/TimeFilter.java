@@ -148,6 +148,7 @@ public class TimeFilter extends Composite {
 
 		private boolean bypassModifyListener;
 		private FilterType type;
+		private int lastEventTime;
 		private IQuantity defaultTime;
 		private IQuantity currentTime;
 		private Text timeText;
@@ -174,6 +175,21 @@ public class TimeFilter extends Composite {
 						setBypassModifyListener(false);
 						return;
 					}
+
+					/**
+					 * If the user edits a Text by highlighting a character and
+					 * overwrites it with a new one, the ModifyListener will fire twice.
+					 *
+					 * To prevent validation (and potential error dialogs) from occurring
+					 * twice, compare the time of the current ModifyEvent to the last
+					 * seen ModifyEvent.
+					 */
+					if (e.time == lastEventTime) {
+						return;
+					} else {
+						lastEventTime = e.time;
+					}
+
 					String newTimestring = timeText.getText();
 					if (!isValidSyntax(newTimestring)) {
 						return;
