@@ -33,24 +33,23 @@
  */
 package org.openjdk.jmc.ui.misc;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
+
 import org.openjdk.jmc.common.unit.IQuantity;
 import org.openjdk.jmc.common.unit.IRange;
 import org.openjdk.jmc.common.unit.UnitLookup;
@@ -59,17 +58,28 @@ import org.openjdk.jmc.ui.misc.PatternFly.Palette;
 
 public class TimeFilter extends Composite {
 
+	private enum FilterType {
+		START,
+		END
+	};
+	private static final String dateFormat = "yyyy-MM-dd ";
+	private static final String timeFormat = "HH:mm:ss:SSS";
+	private boolean isMultiDayRecording = false;
+	public Calendar calendar;
 	private ChartCanvas chartCanvas;
-	private IRange<IQuantity> recordingRange;
 	private XYChart chart;
+	private SimpleDateFormat sdf;
+	private SimpleDateFormat dateFormatter = new SimpleDateFormat(dateFormat);
 	private TimeDisplay startDisplay;
 	private TimeDisplay endDisplay;
 
 	public TimeFilter(Composite parent, IRange<IQuantity> recordingRange, Listener resetListener) {
 		super(parent, SWT.NONE);
-		this.recordingRange = recordingRange;
 		this.setBackground(Palette.getThreadsPageBackgroundColor());
 		this.setLayout(new GridLayout(7, false));
+
+		inspectRecordingRange(recordingRange);
+
 		Label eventsLabel = new Label(this, SWT.LEFT);
 		eventsLabel.setText(Messages.TimeFilter_FILTER_EVENTS);
 		eventsLabel.setFont(JFaceResources.getFontRegistry().get(JFaceResources.BANNER_FONT));
@@ -79,13 +89,13 @@ public class TimeFilter extends Composite {
 		fromLabel.setText(Messages.TimeFilter_FROM);
 		fromLabel.setBackground(Palette.getThreadsPageBackgroundColor());
 
-		startDisplay = new TimeDisplay(this);
+		startDisplay = new TimeDisplay(this, FilterType.START, recordingRange.getStart());
 
 		Label toLabel = new Label(this, SWT.CENTER);
 		toLabel.setText(Messages.TimeFilter_TO);
 		toLabel.setBackground(Palette.getThreadsPageBackgroundColor());
 
-		endDisplay = new TimeDisplay(this);
+		endDisplay = new TimeDisplay(this, FilterType.END, recordingRange.getEnd());
 
 		Button resetBtn = new Button(this, SWT.PUSH);
 		resetBtn.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false));
@@ -93,32 +103,29 @@ public class TimeFilter extends Composite {
 		resetBtn.addListener(SWT.Selection, resetListener);
 	}
 
-	protected synchronized void validateTimeRange() {
-		if (startDisplay.isValidFormat() && endDisplay.isValidFormat()) {
-			Long startDisplayEpoch = startDisplay.getDisplayedTime().in(UnitLookup.EPOCH_MS).longValue();
-			Long endDisplayEpoch = endDisplay.getDisplayedTime().in(UnitLookup.EPOCH_MS).longValue();
-			Long endEpoch = recordingRange.getEnd().in(UnitLookup.EPOCH_MS).longValue();
-			Long startEpoch = recordingRange.getStart().in(UnitLookup.EPOCH_MS).longValue();
-			if (startDisplayEpoch < startEpoch) {
-				DialogToolkit.showWarning(Display.getCurrent().getActiveShell(),
-						Messages.TimeFilter_ERROR, Messages.TimeFilter_START_TIME_PRECEEDS_ERROR);
-				startDisplay.setTextForeground(Palette.PF_RED_100.getSWTColor());
-			} else if (endDisplayEpoch > endEpoch) {
-				DialogToolkit.showWarning(Display.getCurrent().getActiveShell(),
-						Messages.TimeFilter_ERROR, Messages.TimeFilter_END_TIME_EXCEEDS_ERROR);
-				endDisplay.setTextForeground(Palette.PF_RED_100.getSWTColor());
-			} else if (startDisplayEpoch > endDisplayEpoch) {
-				DialogToolkit.showWarning(Display.getCurrent().getActiveShell(),
-						Messages.TimeFilter_ERROR, Messages.TimeFilter_START_TIME_LONGER_THAN_END_ERROR);
-				startDisplay.setTextForeground(Palette.PF_RED_100.getSWTColor());
-			} else {
-				chart.setVisibleRange(startDisplay.getDisplayedTime(), endDisplay.getDisplayedTime());
-				chartCanvas.redrawChart();
-			}
-		} else {
-			DialogToolkit.showWarning(Display.getCurrent().getActiveShell(),
-					Messages.TimeFilter_ERROR, Messages.TimeFilter_INVALID_FORMAT_ERROR);
+	/**
+	 * Determines whether or not the time range of the recording spans multiple days, and if not,
+	 * sets up a Calendar object to hold the date of the recording.
+	 * @param recordingRange
+	 */
+	private void inspectRecordingRange(IRange<IQuantity> recordingRange) {
+		long firstDateEpoch = recordingRange.getStart().in(UnitLookup.EPOCH_MS).longValue();
+		long secondDateEpoch = recordingRange.getEnd().in(UnitLookup.EPOCH_MS).longValue();
+		isMultiDayRecording = !dateFormatter.format(firstDateEpoch).equals(dateFormatter.format(secondDateEpoch));
+		if (!isMultiDayRecording) {
+			calendar = Calendar.getInstance();
+			calendar.setTimeInMillis(firstDateEpoch);
+			calendar.set(Calendar.HOUR_OF_DAY, 0);
+			calendar.set(Calendar.MINUTE, 0);
+			calendar.set(Calendar.SECOND, 0);
+			calendar.set(Calendar.MILLISECOND, 0);
+			calendar.add(Calendar.MILLISECOND, calendar.getTimeZone().getRawOffset());
 		}
+	}
+
+	protected void updateRange() {
+		chart.setVisibleRange(startDisplay.getCurrentTime(), endDisplay.getCurrentTime());
+		chartCanvas.redrawChart();
 	}
 
 	public void setChart(XYChart chart) {
@@ -128,7 +135,7 @@ public class TimeFilter extends Composite {
 	public void setChartCanvas(ChartCanvas canvas) {
 		this.chartCanvas = canvas;
 	}
-	
+
 	public void setStartTime(IQuantity time) {
 		startDisplay.setTime(time);
 	}
@@ -139,29 +146,33 @@ public class TimeFilter extends Composite {
 
 	private class TimeDisplay extends Composite {
 
-		private static final String TIME_FORMAT_REGEX = "\\d{2}\\:\\d{2}\\:\\d{2}\\:\\d{3}";
-		private static final String DIGIT_FORMAT_REGEX = "\\d{3}|\\d{2}";
-		private final Pattern timePattern = Pattern.compile(TIME_FORMAT_REGEX);
-		private final Pattern digitPattern = Pattern.compile(DIGIT_FORMAT_REGEX);
-		private boolean bypassListener;
-		private Calendar currentCalendar;
-		private IQuantity currentTime; // current valid time
-		private IQuantity displayedTime; // the time displayed in the Text, used for validation
-		private StringBuilder sb;
-		private Text timeText;
+		private boolean bypassModifyListener;
+		private FilterType type;
 		private int lastEventTime;
+		private IQuantity defaultTime;
+		private IQuantity currentTime;
+		private Text timeText;
 
-		public TimeDisplay(TimeFilter parent) {
+		public TimeDisplay(TimeFilter parent, FilterType type, IQuantity defaultTime) {
 			super(parent, SWT.NONE);
+			this.type = type;
+			this.defaultTime = defaultTime;
 			this.setBackground(Palette.getThreadsPageBackgroundColor());
 			this.setLayout(new GridLayout());
 			timeText = new Text(this, SWT.SEARCH | SWT.SINGLE);
-			timeText.setTextLimit(12);
+			// if the recording spans multiple days, include the date in the time display
+			if (!isMultiDayRecording) {
+				timeText.setTextLimit(12);
+				sdf = new SimpleDateFormat(timeFormat);
+			} else {
+				timeText.setTextLimit(23);
+				sdf = new SimpleDateFormat(dateFormat + timeFormat);
+			}
 			timeText.addModifyListener(new ModifyListener() {
 				@Override
 				public void modifyText(ModifyEvent e) {
-					if (getBypassListener()) {
-						setBypassListener(false);
+					if (getBypassModifyListener()) {
+						setBypassModifyListener(false);
 						return;
 					}
 
@@ -178,141 +189,123 @@ public class TimeFilter extends Composite {
 					} else {
 						lastEventTime = e.time;
 					}
-					displayedTime = null; // reset the value of displayedTime
-					if (isValidFormat() && isValidTime()) {
-						setTextForeground(Palette.PF_BLACK.getSWTColor());
-						parent.validateTimeRange(); // figure out how to stop initial check
+
+					String newTimestring = timeText.getText();
+					if (!isValidSyntax(newTimestring)) {
+						return;
+					}
+					IQuantity newTime = convertStringToIQuantity(newTimestring);
+					if (currentTime == null || newTime == null) {
+						return;
+					}
+					if (isWithinRange(newTime)) {
+						timeText.setForeground(Palette.PF_BLACK.getSWTColor());
+						currentTime = newTime;
+						parent.updateRange();
 					} else {
-						setTextForeground(Palette.PF_RED_100.getSWTColor());
+						timeText.setForeground(Palette.PF_RED_100.getSWTColor());
 					}
 				}
 			});
 		}
 
-		protected void setTextForeground(Color color) {
-			timeText.setForeground(color);
-		}
-
-		// Convert epoch ms timestamp to Calendar object
-		private Calendar convertEpochToCalendar(long epoch) {
-			Calendar tempCalendar = Calendar.getInstance();
-			tempCalendar.setTime(new Date(epoch));
-			return tempCalendar;
-		}
-
-		private void setCurrentCalendar(long epoch) {
-			currentCalendar = convertEpochToCalendar(epoch);
-		}
-
-		// Locally store the new time, and format it for displaying in the Text widget
-		public synchronized void setTime(IQuantity time) {
-			if (currentTime != null && time.longValue() == currentTime.longValue() &&
-					displayedTime != null && currentTime.longValue() == displayedTime.longValue()) {
-				return;
-			}
-			this.displayedTime = time;
+		/**
+		 * Converts the IQuantity time to a string and displays it in the Text
+		 * @param time IQuantity
+		 */
+		public void setTime(IQuantity time) {
+			setBypassModifyListener(true);
+			String timestring = sdf.format(new Date(time.in(UnitLookup.EPOCH_MS).longValue()));
 			this.currentTime = time;
-			setCurrentCalendar(time.in(UnitLookup.EPOCH_MS).longValue());
-			displayTime(formatTimeString(currentCalendar));
-			setTextForeground(Palette.PF_BLACK.getSWTColor());
+			timeText.setText(timestring);
+			timeText.setForeground(Palette.PF_BLACK.getSWTColor());
+			setBypassModifyListener(false);
 		}
 
-		// Returns the IQuantity time stamp of the time displayed in the widget
-		public IQuantity getDisplayedTime() {
-			if (displayedTime != null) {
-				return displayedTime;
-			}
-			if (isValidFormat() && isValidTime()) {
-				IQuantity time = currentTime;
-				Matcher m = digitPattern.matcher(timeText.getText());
-				int i = 0;
-				while(m.find()) {
-					int value = Integer.parseInt(m.group());
-					switch(i) {
-					case 0:
-						value = value - currentCalendar.get(Calendar.HOUR);
-						time = time.in(UnitLookup.EPOCH_NS).add(UnitLookup.HOUR.quantity(value).in(UnitLookup.NANOSECOND));
-						break;
-					case 1:
-						value = value - currentCalendar.get(Calendar.MINUTE);
-						time = time.in(UnitLookup.EPOCH_NS).add(UnitLookup.MINUTE.quantity(value).in(UnitLookup.NANOSECOND));
-						break;
-					case 2:
-						value = value - currentCalendar.get(Calendar.SECOND);
-						time = time.in(UnitLookup.EPOCH_NS).add(UnitLookup.SECOND.quantity(value).in(UnitLookup.NANOSECOND));
-						break;
-					case 3:
-						value = value - currentCalendar.get(Calendar.MILLISECOND);
-						time = time.in(UnitLookup.EPOCH_NS).add(UnitLookup.MILLISECOND.quantity(value).in(UnitLookup.NANOSECOND));
-						break;
-					}
-					i++;
+		/**
+		 * Converts a formatted time string into an IQuantity.
+		 *
+		 * If the recording range is within a single day, the SimpleDateFormat format will
+		 * be HH:mm:ss:SSS and need to be added to the base date (calendar) in order to
+		 * calculate the epoch milliseconds.
+		 *
+		 * @param timestring String
+		 * @return IQuantity
+		 */
+		private IQuantity convertStringToIQuantity(String timestring) {
+			try {
+				long parsedTime = sdf.parse(timestring).getTime();
+				if (!isMultiDayRecording) {
+					parsedTime += calendar.getTimeInMillis();
 				}
-				return time;
+				return UnitLookup.EPOCH_MS.quantity(parsedTime);
+			} catch (ParseException e) {
 			}
 			return null;
 		}
 
-		// Format the calendar time to a string HH:mm:ss:SSS
-		private String formatTimeString(Calendar cal) {
-			sb = new StringBuilder();
-			sb.append(String.format("%02d", cal.get(Calendar.HOUR)));
-			sb.append(":");
-			sb.append(String.format("%02d", cal.get(Calendar.MINUTE)));
-			sb.append(":");
-			sb.append(String.format("%02d", cal.get(Calendar.SECOND)));
-			sb.append(":");
-			sb.append(String.format("%03d", cal.get(Calendar.MILLISECOND)));
-			return sb.toString();
-		}
-
-		// displayTime() results in calling Text.setText(), use a boolean
-		// to prevent unnecessarily activating the ModifyListener
-		private synchronized boolean getBypassListener() {
-			return bypassListener;
-		}
-
-		protected synchronized void setBypassListener(boolean bypassListener) {
-			this.bypassListener = bypassListener;
-		}
-
-		private void displayTime(String time) {
-			setBypassListener(true); // boolean flag to not activate the modify listener via setText()
-			timeText.setText(time);
-			setBypassListener(false);
+		/**
+		 * Verify that the passed time is within the recording range
+		 * @param time IQuantity
+		 * @return true if the specified time is within the time range of the recording
+		 */
+		private boolean isWithinRange(IQuantity time) {
+			if (time == null) { return false; }
+			long timeMillis = time.in(UnitLookup.EPOCH_MS).longValue();
+			if (type == FilterType.START) {
+				if (timeMillis < defaultTime.in(UnitLookup.EPOCH_MS).longValue()) {
+					DialogToolkit.showWarning(getDisplay().getActiveShell(), Messages.TimeFilter_ERROR, Messages.TimeFilter_START_TIME_PRECEEDS_ERROR);
+					return false;
+				} else if (timeMillis > endDisplay.getDefaultTime().in(UnitLookup.EPOCH_MS).longValue() ||
+						timeMillis > endDisplay.getCurrentTime().in(UnitLookup.EPOCH_MS).longValue()) {
+					DialogToolkit.showWarning(getDisplay().getActiveShell(), Messages.TimeFilter_ERROR, Messages.TimeFilter_START_TIME_LONGER_THAN_END_ERROR);
+					endDisplay.getDefaultTime().in(UnitLookup.EPOCH_MS).longValue();
+					return false;
+				}
+			} else {
+				if (timeMillis > defaultTime.in(UnitLookup.EPOCH_MS).longValue()) {
+					DialogToolkit.showWarning(getDisplay().getActiveShell(), Messages.TimeFilter_ERROR, Messages.TimeFilter_END_TIME_EXCEEDS_ERROR);
+					return false;
+				} else if (timeMillis < startDisplay.getDefaultTime().in(UnitLookup.EPOCH_MS).longValue() ||
+						timeMillis < startDisplay.getCurrentTime().in(UnitLookup.EPOCH_MS).longValue()) {
+					DialogToolkit.showWarning(getDisplay().getActiveShell(), Messages.TimeFilter_ERROR, Messages.TimeFilter_START_TIME_LONGER_THAN_END_ERROR);
+					return false;
+				}
+			}
+			return true;
 		}
 
 		/**
-		 * Verify that the time string inside the text widget matches the
-		 * expected time format of HH:mm:ss:SSS
-		 * @return true if the text corresponds to a HH:mm:ss:SSS format
+		 * Verify that the passed time string matches the expected time format
+		 * @param formattedTimestring String
+		 * @return true if the text corresponds to the current SimpleDateFormat format
 		 */
-		private boolean isValidFormat() {
-			if (!timePattern.matcher(timeText.getText()).matches()) {
-				// not in HH:mm:ss:SSS format
+		private boolean isValidSyntax(String formattedTimestring) {
+			if (formattedTimestring.length() != timeText.getTextLimit()) { return false; }
+			try {
+				sdf.parse(formattedTimestring);
+			} catch (ParseException e) {
 				return false;
 			}
 			return true;
 		}
 
-		/**
-		 * Verify that the string inside the text widget is a valid
-		 * 24-hour clock time
-		 * @return true if the text corresponds to a valid 24-hour time
-		 */
-		private boolean isValidTime() {
-			Matcher m = digitPattern.matcher(timeText.getText());
-			int i = 0;
-			while(m.find()) {
-				int value = Integer.parseInt(m.group());
-				if (i == 0 && value >= 24) {
-					return false;
-				} else if ((i == 1 || i == 2) && value >= 60) {
-					return false;
-				}
-				i++;
-			}
-			return true;
+		private IQuantity getDefaultTime() {
+			return defaultTime;
+		}
+
+		private IQuantity getCurrentTime() {
+			return currentTime;
+		}
+
+		// When programmatically changing the Text (e.g., this.setTime()), use
+		// a boolean to prevent the ModifyListener from firing
+		private boolean getBypassModifyListener() {
+			return this.bypassModifyListener;
+		}
+
+		private void setBypassModifyListener(boolean bypassModifyListener) {
+			this.bypassModifyListener = bypassModifyListener;
 		}
 	}
 }
