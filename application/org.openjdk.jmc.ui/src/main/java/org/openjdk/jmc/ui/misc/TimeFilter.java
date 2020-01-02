@@ -156,7 +156,7 @@ public class TimeFilter extends Composite {
 			super(parent, SWT.NONE);
 			this.type = type;
 			this.defaultTime = defaultTime;
-      this.setBackground(Palette.getThreadsPageBackgroundColor());
+			this.setBackground(Palette.getThreadsPageBackgroundColor());
 			this.setLayout(new GridLayout());
 			timeText = new Text(this, SWT.SEARCH | SWT.SINGLE);
 			// if the recording spans multiple days, include the date in the time display
@@ -202,6 +202,7 @@ public class TimeFilter extends Composite {
 			String timestring = sdf.format(new Date(time.in(UnitLookup.EPOCH_MS).longValue()));
 			this.currentTime = time;
 			timeText.setText(timestring);
+			timeText.setForeground(Palette.PF_BLACK.getSWTColor());
 			setBypassModifyListener(false);
 		}
 
